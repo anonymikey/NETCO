@@ -1,12 +1,6 @@
 {
   "buildCommand": "pnpm install && pnpm run build",
   "outputDirectory": "artifacts/netco/dist",
-  "rewrites": [
-    {
-      "source": "/(?!api/).*",
-      "destination": "/index.html"
-    }
-  ],
   "headers": [
     {
       "source": "/api/:path*",
