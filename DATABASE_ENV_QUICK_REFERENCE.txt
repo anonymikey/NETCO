@@ -1,0 +1,112 @@
+================================================================================
+                  DATABASE ENVIRONMENT VARIABLE CONFIGURATION
+                    FOR NETCO API SERVER ON RENDER
+================================================================================
+
+PRIORITY ORDER (Use the FIRST one available):
+
+    1. POSTGRES_URL (PRIMARY - USE THIS ONE)
+         ↓
+    2. SUPABASE_DATABASE_URL (FALLBACK)
+         ↓
+    3. DATABASE_URL (LAST RESORT)
+
+================================================================================
+                          RENDER CONFIGURATION
+================================================================================
+
+WHAT TO SET:
+    Variable Name:  POSTGRES_URL
+    Value:          [Your Supabase Connection String]
+
+WHERE TO GET IT:
+    1. Go to Supabase Dashboard: https://app.supabase.com
+    2. Select your NETCO project
+    3. Go to Settings → Database
+    4. Copy "Connection Pooling" URL (NOT direct connection)
+    5. Select "Psycopg2" driver
+    6. Copy entire connection string
+
+EXAMPLE VALUE:
+    postgresql://postgres.[id]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres?sslmode=require
+
+================================================================================
+                       RENDER DEPLOYMENT STEPS
+================================================================================
+
+Step 1: Go to Render Dashboard
+    → Select your NETCO API service
+    → Click "Settings"
+    → Click "Environment"
+
+Step 2: Add Environment Variable
+    → Click "Add Environment Variable"
+    → Key: POSTGRES_URL
+    → Value: [Paste your Supabase connection string]
+    → Click "Save"
+
+Step 3: Service Auto-Restarts
+    → Render automatically redeploys with new env var
+    → Watch the logs for confirmation
+
+================================================================================
+                         VERIFICATION CHECKLIST
+================================================================================
+
+After deployment, check logs for these messages:
+
+    ✓ "[v0] Initializing database connection with Drizzle ORM..."
+    ✓ "[v0] Database pool connected"
+    ✓ "[v0] Database client initialized successfully"
+
+If you see all three → Connection successful!
+
+================================================================================
+                         WHERE IT'S USED IN CODE
+================================================================================
+
+1. /lib/db/src/index.ts
+   → Runtime database connections for all API requests
+
+2. /lib/db/drizzle.config.ts
+   → Drizzle schema generation and introspection
+
+3. /lib/db/scripts/migrate.ts
+   → Database migrations on deployment
+
+All three use the SAME priority order:
+    POSTGRES_URL ?? SUPABASE_DATABASE_URL ?? DATABASE_URL
+
+================================================================================
+                            IMPORTANT NOTES
+================================================================================
+
+• SSL Configuration: Automatically handled (rejectUnauthorized: false)
+• Connection Pooling: REQUIRED - use Supabase pooling, not direct connection
+• No Manual Migrations: Drizzle auto-manages schema
+• Only ONE variable needed: Set POSTGRES_URL, ignore the others
+
+================================================================================
+                          TROUBLESHOOTING
+================================================================================
+
+Problem: "POSTGRES_URL not found"
+Solution: Check Render Environment Variables are saved and deployed
+
+Problem: "Connection limit reached"
+Solution: Ensure using connection pooling URL from Supabase, not direct URL
+
+Problem: "SSL certificate error"
+Solution: This is normal - SSL is auto-configured and working
+
+================================================================================
+                              TL;DR
+================================================================================
+
+1. Get Supabase connection pooling URL
+2. Add to Render: POSTGRES_URL = [connection string]
+3. Service auto-restarts
+4. Check logs for "Database client initialized successfully"
+5. Done!
+
+================================================================================
