@@ -1,15 +1,4 @@
 {
-  "buildCommand": "pnpm install && pnpm run typecheck && pnpm -r run build && node artifacts/api-server/build.mjs",
-  "outputDirectory": "artifacts/netco/dist",
-  "functions": {
-    "server.js": {
-      "runtime": "nodejs24.x"
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/server.js"
-    }
-  ]
+  "buildCommand": "pnpm install && pnpm -r run build",
+  "outputDirectory": "artifacts/netco/dist"
 }
