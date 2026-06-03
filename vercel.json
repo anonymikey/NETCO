@@ -1,4 +1,10 @@
 {
   "buildCommand": "pnpm install && pnpm -r run build",
-  "outputDirectory": "artifacts/netco/dist"
+  "outputDirectory": "artifacts/netco/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
