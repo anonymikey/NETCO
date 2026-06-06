@@ -12,6 +12,9 @@ export default defineConfig({
   dialect: "postgresql",
   dbCredentials: {
     url: dbUrl,
+    ssl: {
+      rejectUnauthorized: false,
+    },
   },
   out: path.join(__dirname, "./migrations"),
 });
