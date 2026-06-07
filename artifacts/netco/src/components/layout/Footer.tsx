@@ -14,7 +14,6 @@ const supportLinks = [
   { label: "FAQs", href: "/faqs" },
   { label: "Terms of Service", href: "/terms" },
   { label: "Contact Us", href: "/contact" },
-  { label: "Admin Panel", href: "/admin" },
 ];
 
 export function Footer() {
