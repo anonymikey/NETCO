@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Menu, X, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import netcoLogo from "/netco-logo.png";
+import netcoLogo from "/logo.png";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -19,6 +19,8 @@ export function Navbar() {
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
+    // Scroll to top when location changes
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, [location]);
 
   const navLinks = [

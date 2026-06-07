@@ -28,23 +28,4 @@ router.use("/admin", adminAnnouncementsRouter);
 router.use("/auth/email", authEmailRouter);
 router.use("/auth/profile", authProfileRouter);
 
-// Temporary diagnostic route to debug database connection
-router.get("/debug/db-url", async (req, res) => {
-  const url =
-    process.env.POSTGRES_URL ||
-    process.env.SUPABASE_DATABASE_URL ||
-    process.env.DATABASE_URL;
-
-  const masked = url?.replace(/:(.*?)@/, ":****@");
-
-  res.json({
-    using: process.env.POSTGRES_URL
-      ? "POSTGRES_URL"
-      : process.env.SUPABASE_DATABASE_URL
-        ? "SUPABASE_DATABASE_URL"
-        : "DATABASE_URL",
-    url: masked,
-  });
-});
-
 export default router;
