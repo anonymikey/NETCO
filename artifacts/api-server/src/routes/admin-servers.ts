@@ -184,6 +184,14 @@ router.patch("/servers/:id", async (req, res) => {
     return;
   }
 
+  // Log server status changes for real-time updates
+  req.log.info({ 
+    id, 
+    serverName: updated.serverName, 
+    status: updated.status,
+    isFree: updated.isFree, 
+  }, "Server status updated - real-time sync triggered");
+
   res.json(updated);
 });
 
