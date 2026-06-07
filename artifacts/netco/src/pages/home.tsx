@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Shield, Zap, Globe, Cpu, ArrowRight, Server, Check, Gift, Lock, Smartphone, Wifi, Clock, Users, TrendingUp, Headphones } from "lucide-react";
 import { useGetPlatformStats, useListPackages, useListConfigServers } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { DownloadHelpModal } from "@/components/modals/DownloadHelpModal";
+import { AppShowcase } from "@/components/sections/AppShowcase";
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -22,6 +24,8 @@ export default function Home() {
   const { data: packages } = useListPackages();
   const { data: servers = [] } = useListConfigServers();
   const activeServers = (Array.isArray(servers) ? servers : []).filter((s: any) => s.status === "active");
+  const [helpModalOpen, setHelpModalOpen] = useState(false);
+  const [selectedServer, setSelectedServer] = useState<any>(null);
 
   const handleProtectedLink = (href: string) => {
     if (!user) {
@@ -165,12 +169,24 @@ export default function Home() {
                     )}
 
                     {/* CTA Button */}
-                    <Button 
-                      onClick={() => handleProtectedLink("/pricing")}
-                      className="w-full mt-4 bg-primary text-primary-foreground hover:bg-primary/90"
-                    >
-                      {user ? "Get Access" : "Sign In to Buy"} <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
+                    {server.isFree ? (
+                      <Button 
+                        onClick={() => {
+                          setSelectedServer(server);
+                          setHelpModalOpen(true);
+                        }}
+                        className="w-full mt-4 bg-success text-white hover:bg-success/90"
+                      >
+                        <Gift className="w-4 h-4 mr-2" /> Free - Get Config <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    ) : (
+                      <Button 
+                        onClick={() => handleProtectedLink("/pricing")}
+                        className="w-full mt-4 bg-primary text-primary-foreground hover:bg-primary/90"
+                      >
+                        {user ? "Get Access" : "Sign In to Buy"} <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -190,6 +206,9 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      {/* App Showcase Section */}
+      <AppShowcase isFree={true} />
 
       {/* Features Section */}
       <section className="py-20 px-4 bg-card/30 border-t border-border">
@@ -371,6 +390,15 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Download Help Modal */}
+      <DownloadHelpModal
+        isOpen={helpModalOpen}
+        onClose={() => setHelpModalOpen(false)}
+        configName={selectedServer?.serverName || "Server Config"}
+        appType={selectedServer?.appType === "http_custom" ? "HTTP Custom (.hc)" : "HTTP Injector (.ehi)"}
+        fileExtension={selectedServer?.appType === "http_custom" ? ".hc" : ".ehi"}
+      />
     </div>
   );
 }
