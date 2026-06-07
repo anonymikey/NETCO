@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useListPlans, getListPlansQueryKey } from "@workspace/api-client-react";
-import { Search, Download, Clock, CheckCircle, XCircle, Smartphone, Wifi, RefreshCw } from "lucide-react";
+import { Search, Download, Clock, CheckCircle, XCircle, Smartphone, Wifi, RefreshCw, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { initServerStatusUpdates, subscribeToServerStatus, stopServerStatusUpdates } from "@/lib/server-status-realtime";
 
 function formatTimeLeft(expiryDate: string) {
   const expiry = new Date(expiryDate);
@@ -25,6 +26,18 @@ export default function Dashboard() {
   const [phone, setPhone] = useState("");
   const [deviceId, setDeviceId] = useState("");
   const [searchParams, setSearchParams] = useState<{ phone?: string; deviceId?: string } | null>(null);
+  const [serverStatus, setServerStatus] = useState<Record<string, any>>({});
+
+  // Initialize real-time server status updates
+  useEffect(() => {
+    initServerStatusUpdates();
+    const unsubscribe = subscribeToServerStatus(setServerStatus);
+
+    return () => {
+      unsubscribe();
+      stopServerStatusUpdates();
+    };
+  }, []);
 
   const { data: plans, isLoading } = useListPlans(
     searchParams ?? {},
@@ -133,11 +146,20 @@ export default function Dashboard() {
                   <span className="text-muted-foreground truncate">{plan.deviceId}</span>
                 </div>
                 {plan.configUrl && (
-                  <a href={plan.configUrl} download data-testid={`button-download-${plan.id}`}>
-                    <Button size="sm" className="bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30">
-                      <Download className="w-4 h-4 mr-2" /> Download Config ({plan.fileExtension})
-                    </Button>
-                  </a>
+                  <div className="space-y-2">
+                    <a href={plan.configUrl} download data-testid={`button-download-${plan.id}`}>
+                      <Button size="sm" className="bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 w-full">
+                        <Download className="w-4 h-4 mr-2" /> Download Config ({plan.fileExtension})
+                      </Button>
+                    </a>
+                    {/* Server availability status */}
+                    {plan.serverId && serverStatus[plan.serverId] && (
+                      <div className={`flex items-center gap-2 text-xs p-2 rounded-md ${serverStatus[plan.serverId].isFree ? "bg-success/10 text-success border border-success/20" : "bg-warning/10 text-warning border border-warning/20"}`}>
+                        <span className={`w-2 h-2 rounded-full ${serverStatus[plan.serverId].isFree ? "bg-success" : "bg-warning"}`} />
+                        {serverStatus[plan.serverId].isFree ? "Free server available" : "Premium server (limited slots)"}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             ))}
