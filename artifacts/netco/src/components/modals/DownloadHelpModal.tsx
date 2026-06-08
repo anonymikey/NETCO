@@ -8,6 +8,7 @@ interface DownloadHelpModalProps {
   configName?: string;
   appType?: string;
   fileExtension?: string;
+  downloadUrl?: string;
 }
 
 export function DownloadHelpModal({
@@ -16,6 +17,7 @@ export function DownloadHelpModal({
   configName = "Server Config",
   appType = "HTTP Custom",
   fileExtension = ".hc",
+  downloadUrl = "",
 }: DownloadHelpModalProps) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
@@ -67,6 +69,16 @@ export function DownloadHelpModal({
                   Make sure you have <strong>{appType}</strong> installed on your Android device before proceeding.
                 </p>
               </div>
+
+              {/* Download Button */}
+              {downloadUrl && (
+                <a href={downloadUrl} download className="block">
+                  <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Config File ({configName}{fileExtension})
+                  </Button>
+                </a>
+              )}
             </div>
           )}
 

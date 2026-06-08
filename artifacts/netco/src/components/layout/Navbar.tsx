@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Menu, X, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import netcoLogo from "/logo.png";
 
 export function Navbar() {
@@ -71,6 +72,7 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-2">
             {loading ? null : user ? (
               <>
+                <NotificationBell />
                 <Link href="/dashboard" data-testid="link-my-plans">
                   <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5">
                     <User className="w-4 h-4" />
