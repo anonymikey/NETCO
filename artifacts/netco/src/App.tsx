@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { Layout } from "@/components/layout";
 import Home from "@/pages/home";
 import Pricing from "@/pages/pricing";
+import Plans from "@/pages/plans";
 import Checkout from "@/pages/checkout";
 import Dashboard from "@/pages/dashboard";
 import HowToConnect from "@/pages/how-to-connect";
@@ -22,6 +23,7 @@ import Signup from "@/pages/signup";
 import CheckExpiry from "@/pages/check-expiry";
 import Account from "@/pages/account";
 import Admin from "@/pages/admin";
+import Notifications from "@/pages/notifications";
 import OrderStatus from "@/pages/order-status";
 import Terms from "@/pages/terms";
 import NotFound from "@/pages/not-found";
@@ -65,9 +67,11 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/pricing" component={Pricing} />
+      <Route path="/plans" component={Plans} />
       <Route path="/checkout" component={Checkout} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/account" component={Account} />
+      <Route path="/notifications" component={Notifications} />
       <Route path="/how-to-connect" component={HowToConnect} />
       <Route path="/server-status" component={ServerStatus} />
       <Route path="/faqs" component={FAQs} />
