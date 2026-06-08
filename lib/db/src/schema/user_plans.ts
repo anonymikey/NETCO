@@ -1,23 +1,21 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, uuid, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { userProfilesTable } from "./user_profiles";
 
 export const userPlansTable = pgTable("user_plans", {
-  id: text("id").primaryKey(),
-  orderId: text("order_id").notNull(),
-  network: text("network").notNull(),
-  planName: text("plan_name").notNull(),
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => userProfilesTable.id, { onDelete: "cascade" }),
   planType: text("plan_type").notNull(),
-  duration: text("duration").notNull(),
-  appType: text("app_type").notNull(),
-  deviceId: text("device_id").notNull(),
-  phone: text("phone").notNull(),
-  speed: text("speed"),
-  expiryDate: timestamp("expiry_date", { withTimezone: true }).notNull(),
+  planName: text("plan_name").notNull(),
+  durationDays: integer("duration_days").notNull(),
   status: text("status").notNull().default("active"),
-  configUrl: text("config_url"),
-  fileExtension: text("file_extension"),
+  activatedAt: timestamp("activated_at", { withTimezone: true }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const insertUserPlanSchema = createInsertSchema(userPlansTable).omit({ createdAt: true });
