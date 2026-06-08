@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, LogOut, User } from "lucide-react";
+import { Menu, X, LogOut, User, Bell, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -26,7 +26,7 @@ export function Navbar() {
 
   const navLinks = [
     { href: "/", label: "Home" },
-    { href: "/pricing", label: "Pricing" },
+    { href: "/plans", label: "Plans" },
     { href: "/how-to-connect", label: "How to Connect" },
     { href: "/server-status", label: "Status" },
     { href: "/faqs", label: "FAQs" },
@@ -69,10 +69,20 @@ export function Navbar() {
           </nav>
 
           {/* Auth Buttons (Desktop) */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-3">
             {loading ? null : user ? (
               <>
                 <NotificationBell />
+                <Link href="/notifications" data-testid="link-notifications">
+                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5">
+                    <Bell className="w-4 h-4" />
+                  </Button>
+                </Link>
+                <Link href="/account" data-testid="link-account">
+                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5">
+                    <Settings className="w-4 h-4" />
+                  </Button>
+                </Link>
                 <Link href="/dashboard" data-testid="link-my-plans">
                   <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5">
                     <User className="w-4 h-4" />
@@ -142,6 +152,16 @@ export function Navbar() {
                     <Link href="/dashboard">
                       <Button variant="outline" className="w-full border-border gap-2">
                         <User className="w-4 h-4" /> My Plans
+                      </Button>
+                    </Link>
+                    <Link href="/notifications">
+                      <Button variant="outline" className="w-full border-border gap-2">
+                        <Bell className="w-4 h-4" /> Notifications
+                      </Button>
+                    </Link>
+                    <Link href="/account">
+                      <Button variant="outline" className="w-full border-border gap-2">
+                        <Settings className="w-4 h-4" /> Account
                       </Button>
                     </Link>
                     <Button onClick={signOut} variant="ghost" className="w-full text-muted-foreground gap-2">

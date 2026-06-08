@@ -1,14 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bell, AlertCircle, Server, Zap, Wrench, Gift } from 'lucide-react';
+import { Bell, AlertCircle, Server, Zap, Wrench, Gift, Mail, Lock, ShoppingCart, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 
 interface Notification {
   id: string;
   title: string;
   message: string;
-  type: 'server_added' | 'upgrade' | 'maintenance' | 'alert' | 'promotion';
+  type: string;
+  category?: string;
   icon?: string;
   isRead: boolean;
   createdAt: string;
@@ -19,6 +21,19 @@ export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Set up real-time notifications
+  useRealtimeNotifications({
+    onNewNotification: (notification) => {
+      setNotifications((prev) => [notification, ...prev]);
+      setUnreadCount((prev) => prev + 1);
+    },
+    onNotificationRead: (id) => {
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      );
+    },
+  });
 
   useEffect(() => {
     // Fetch notifications from API
@@ -62,17 +77,24 @@ export function NotificationBell() {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'server_added':
-        return <Server className="w-4 h-4 text-primary" />;
+      case 'server':
+        return <Server className="w-4 h-4 text-purple-500" />;
       case 'upgrade':
-        return <Zap className="w-4 h-4 text-yellow-400" />;
-      case 'maintenance':
-        return <Wrench className="w-4 h-4 text-orange-400" />;
-      case 'alert':
-        return <AlertCircle className="w-4 h-4 text-red-400" />;
       case 'promotion':
-        return <Gift className="w-4 h-4 text-green-400" />;
+        return <Zap className="w-4 h-4 text-yellow-500" />;
+      case 'maintenance':
+        return <Wrench className="w-4 h-4 text-orange-500" />;
+      case 'alert':
+      case 'security':
+        return <Lock className="w-4 h-4 text-red-500" />;
+      case 'order':
+        return <ShoppingCart className="w-4 h-4 text-blue-500" />;
+      case 'payment':
+        return <CreditCard className="w-4 h-4 text-green-500" />;
+      case 'account':
+        return <AlertCircle className="w-4 h-4 text-gray-500" />;
       default:
-        return <Bell className="w-4 h-4 text-muted-foreground" />;
+        return <Mail className="w-4 h-4 text-muted-foreground" />;
     }
   };
 
