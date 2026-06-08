@@ -235,6 +235,7 @@ export default function Dashboard() {
           configName={selectedPlan?.planName || "Server Config"}
           appType={selectedPlan?.appType || "HTTP Custom"}
           fileExtension={selectedPlan?.fileExtension || ".hc"}
+          downloadUrl={selectedPlan?.configUrl || ""}
         />
       </div>
     </div>

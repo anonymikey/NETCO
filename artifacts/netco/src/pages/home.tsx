@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Shield, Zap, Globe, Cpu, ArrowRight, Server, Check, Gift, Lock, Smartphone, Wifi, Clock, Users, TrendingUp, Headphones } from "lucide-react";
@@ -26,6 +26,13 @@ export default function Home() {
   const activeServers = (Array.isArray(servers) ? servers : []).filter((s: any) => s.status === "active");
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [selectedServer, setSelectedServer] = useState<any>(null);
+
+  // Redirect logged-in users to dashboard
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
 
   const handleProtectedLink = (href: string) => {
     if (!user) {
@@ -398,6 +405,7 @@ export default function Home() {
         configName={selectedServer?.serverName || "Server Config"}
         appType={selectedServer?.appType === "http_custom" ? "HTTP Custom (.hc)" : "HTTP Injector (.ehi)"}
         fileExtension={selectedServer?.appType === "http_custom" ? ".hc" : ".ehi"}
+        downloadUrl={selectedServer?.fileUrl || ""}
       />
     </div>
   );

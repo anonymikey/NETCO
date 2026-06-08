@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Smartphone, Download, Key, Upload, Play, Lightbulb, ExternalLink } from "lucide-react";
+import { AppShowcase } from "@/components/sections/AppShowcase";
 
 const APPS = [
   {
@@ -10,7 +11,7 @@ const APPS = [
     name: "HTTP Custom",
     fileExt: ".hc",
     deviceLabel: "Device ID",
-    playStoreUrl: "https://play.google.com/store/apps/details?id=xyz.wossy.httpcustom",
+    playStoreUrl: "https://play.google.com/store/apps/details?id=xyz.easypro.httpcustom&pcampaignid=web_share",
     icon: "HC",
     color: "text-primary",
     steps: [
@@ -188,8 +189,13 @@ export default function HowToConnect() {
           </ul>
         </div>
 
+        {/* App Showcase */}
+        <div className="pt-10 border-t border-border">
+          <AppShowcase isFree={true} />
+        </div>
+
         {/* CTA */}
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-4 pt-10">
           <p className="text-muted-foreground">Ready to get started?</p>
           <Link href="/pricing">
             <Button className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary-hover px-8 h-11" data-testid="button-browse-plans">
