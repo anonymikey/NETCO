@@ -1,16 +1,15 @@
-import { pgTable, text, timestamp, boolean, varchar, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, uuid, timestamp, boolean, varchar, jsonb } from "drizzle-orm/pg-core";
 
 export const userProfilesTable = pgTable("user_profiles", {
-  id: text("id").primaryKey(),
-  supabaseUid: text("supabase_uid").notNull().unique(),
+  id: uuid("id").primaryKey(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   fullName: varchar("full_name", { length: 255 }),
   username: varchar("username", { length: 50 }).unique(),
   phone: varchar("phone", { length: 20 }),
   country: varchar("country", { length: 100 }),
   timezone: varchar("timezone", { length: 100 }),
-  bio: text("bio"),
-  avatarUrl: text("avatar_url"),
+  bio: varchar("bio"),
+  avatarUrl: varchar("avatar_url"),
   isEmailVerified: boolean("is_email_verified").notNull().default(false),
   isPhoneVerified: boolean("is_phone_verified").notNull().default(false),
   twoFactorEnabled: boolean("two_factor_enabled").notNull().default(false),

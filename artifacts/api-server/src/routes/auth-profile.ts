@@ -9,7 +9,7 @@ import { logger } from "../lib/logger.js";
 const router = Router();
 
 const CreateProfileBody = z.object({
-  supabaseUid: z.string().min(1),
+  id: z.string().uuid(),
   email: z.string().email(),
   fullName: z.string().optional(),
   phone: z.string().optional(),
@@ -44,18 +44,17 @@ router.post("/create", async (req, res) => {
       return;
     }
 
-    const { supabaseUid, email, fullName, phone } = parsed.data;
-    const id = randomUUID();
+    const { id, email, fullName, phone } = parsed.data;
 
     // Check if profile already exists
     const existing = await db
       .select()
       .from(userProfilesTable)
-      .where(eq(userProfilesTable.supabaseUid, supabaseUid))
+      .where(eq(userProfilesTable.id, id))
       .limit(1);
 
     if (existing.length > 0) {
-      logger.warn({ supabaseUid }, "Profile already exists");
+      logger.warn({ userId: id }, "Profile already exists");
       res.status(409).json({ error: "Profile already exists" });
       return;
     }
@@ -65,7 +64,6 @@ router.post("/create", async (req, res) => {
       .insert(userProfilesTable)
       .values({
         id,
-        supabaseUid,
         email,
         fullName: fullName ?? null,
         phone: phone ?? null,
@@ -77,20 +75,13 @@ router.post("/create", async (req, res) => {
     // Send welcome email
     try {
       await sendWelcomeEmail(email);
-      logger.info({ supabaseUid, email }, "Welcome email sent to new user");
+      logger.info({ userId: id, email }, "Welcome email sent to new user");
     } catch (emailErr) {
       logger.error({ emailErr, email }, "Failed to send welcome email");
       // Don't fail the signup if email fails
     }
 
-    res.status(201).json({
-      id: profile.id,
-      supabaseUid: profile.supabaseUid,
-      email: profile.email,
-      fullName: profile.fullName,
-      phone: profile.phone,
-      isEmailVerified: profile.isEmailVerified,
-    });
+    res.status(201).json(formatProfile(profile));
   } catch (err) {
     logger.error({ err, body: req.body }, "Error creating profile");
     const message = err instanceof Error ? err.message : "Failed to create profile";
@@ -98,15 +89,15 @@ router.post("/create", async (req, res) => {
   }
 });
 
-// Get user profile (by supabaseUid)
-router.get("/:supabaseUid", async (req, res) => {
+// Get user profile (by userId)
+router.get("/:userId", async (req, res) => {
   try {
-    const { supabaseUid } = req.params;
+    const { userId } = req.params;
 
     const [profile] = await db
       .select()
       .from(userProfilesTable)
-      .where(eq(userProfilesTable.supabaseUid, supabaseUid))
+      .where(eq(userProfilesTable.id, userId))
       .limit(1);
 
     if (!profile) {
@@ -116,16 +107,16 @@ router.get("/:supabaseUid", async (req, res) => {
 
     res.json(formatProfile(profile));
   } catch (err) {
-    logger.error({ err, supabaseUid: req.params.supabaseUid }, "Error fetching profile");
+    logger.error({ err, userId: req.params.userId }, "Error fetching profile");
     const message = err instanceof Error ? err.message : "Failed to fetch profile";
     res.status(500).json({ error: message });
   }
 });
 
 // Update user profile
-router.patch("/:supabaseUid", async (req, res) => {
+router.patch("/:userId", async (req, res) => {
   try {
-    const { supabaseUid } = req.params;
+    const { userId } = req.params;
     const parsed = UpdateProfileBody.safeParse(req.body);
 
     if (!parsed.success) {
@@ -136,7 +127,7 @@ router.patch("/:supabaseUid", async (req, res) => {
     const [profile] = await db
       .select()
       .from(userProfilesTable)
-      .where(eq(userProfilesTable.supabaseUid, supabaseUid))
+      .where(eq(userProfilesTable.id, userId))
       .limit(1);
 
     if (!profile) {
@@ -165,12 +156,12 @@ router.patch("/:supabaseUid", async (req, res) => {
             : profile.newsletterSubscribed,
         updatedAt: new Date(),
       })
-      .where(eq(userProfilesTable.supabaseUid, supabaseUid))
+      .where(eq(userProfilesTable.id, userId))
       .returning();
 
     res.json(formatProfile(updated));
   } catch (err) {
-    logger.error({ err, supabaseUid: req.params.supabaseUid }, "Error updating profile");
+    logger.error({ err, userId: req.params.userId }, "Error updating profile");
     const message = err instanceof Error ? err.message : "Failed to update profile";
     res.status(500).json({ error: message });
   }
