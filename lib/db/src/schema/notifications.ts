@@ -1,13 +1,13 @@
 import { pgTable, text, uuid, boolean, timestamp, jsonb, varchar, index, check } from "drizzle-orm/pg-core";
-import { userProfiles } from "./user_profiles";
+import { userProfilesTable } from "./user_profiles";
 
 export const notifications = pgTable(
   "notifications",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .notNull()
-      .references(() => userProfiles.supabaseUid, { onDelete: "cascade" }),
+      .references(() => userProfilesTable.supabaseUid, { onDelete: "cascade" }),
     title: varchar("title", { length: 255 }).notNull(),
     message: text("message").notNull(),
     type: varchar("type", { length: 50 }).notNull(),

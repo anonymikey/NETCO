@@ -4,7 +4,7 @@
 -- 1. Create notifications table
 CREATE TABLE IF NOT EXISTS notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES user_profiles(supabase_uid) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES user_profiles(supabase_uid) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
   message TEXT NOT NULL,
   type VARCHAR(50) NOT NULL CHECK (type IN ('server_added', 'upgrade', 'maintenance', 'alert', 'promotion')),
@@ -35,7 +35,7 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 -- 5. Create RLS policies
 -- Allow users to read only their own notifications
 CREATE POLICY "Users can view their own notifications" ON notifications
-  FOR SELECT USING (user_id = auth.uid());
+  FOR SELECT USING (user_id = auth.uid()::text);
 
 -- Allow authenticated users (admin) to insert notifications
 CREATE POLICY "Authenticated users can insert notifications" ON notifications
@@ -43,15 +43,15 @@ CREATE POLICY "Authenticated users can insert notifications" ON notifications
 
 -- Allow users to update only their own notifications (mark as read)
 CREATE POLICY "Users can update their own notifications" ON notifications
-  FOR UPDATE USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+  FOR UPDATE USING (user_id = auth.uid()::text)
+  WITH CHECK (user_id = auth.uid()::text);
 
 -- Allow users to delete only their own notifications
 CREATE POLICY "Users can delete their own notifications" ON notifications
-  FOR DELETE USING (user_id = auth.uid());
+  FOR DELETE USING (user_id = auth.uid()::text);
 
 -- 6. Create a function to mark notifications as read
-CREATE OR REPLACE FUNCTION mark_notification_read(notification_id UUID, user_id UUID)
+CREATE OR REPLACE FUNCTION mark_notification_read(notification_id UUID, user_id TEXT)
 RETURNS notifications AS $$
 BEGIN
   UPDATE notifications
