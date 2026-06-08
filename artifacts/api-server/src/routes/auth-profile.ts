@@ -17,10 +17,22 @@ const CreateProfileBody = z.object({
 
 const UpdateProfileBody = z.object({
   fullName: z.string().optional(),
+  username: z.string().optional(),
   phone: z.string().optional(),
+  country: z.string().optional(),
+  timezone: z.string().optional(),
   bio: z.string().optional(),
   avatarUrl: z.string().url().optional(),
   newsletterSubscribed: z.boolean().optional(),
+  preferredTheme: z.string().optional(),
+  preferredLanguage: z.string().optional(),
+  notificationPreferences: z.object({
+    email: z.boolean().optional(),
+    orders: z.boolean().optional(),
+    payments: z.boolean().optional(),
+    promotional: z.boolean().optional(),
+    securityAlerts: z.boolean().optional(),
+  }).optional(),
 });
 
 // Create new user profile (called after signup)
@@ -86,7 +98,7 @@ router.post("/create", async (req, res) => {
   }
 });
 
-// Get user profile
+// Get user profile (by supabaseUid)
 router.get("/:supabaseUid", async (req, res) => {
   try {
     const { supabaseUid } = req.params;
@@ -102,18 +114,7 @@ router.get("/:supabaseUid", async (req, res) => {
       return;
     }
 
-    res.json({
-      id: profile.id,
-      email: profile.email,
-      fullName: profile.fullName,
-      phone: profile.phone,
-      bio: profile.bio,
-      avatarUrl: profile.avatarUrl,
-      isEmailVerified: profile.isEmailVerified,
-      isPhoneVerified: profile.isPhoneVerified,
-      newsletterSubscribed: profile.newsletterSubscribed,
-      createdAt: profile.createdAt,
-    });
+    res.json(formatProfile(profile));
   } catch (err) {
     logger.error({ err, supabaseUid: req.params.supabaseUid }, "Error fetching profile");
     const message = err instanceof Error ? err.message : "Failed to fetch profile";
@@ -147,9 +148,17 @@ router.patch("/:supabaseUid", async (req, res) => {
       .update(userProfilesTable)
       .set({
         fullName: parsed.data.fullName ?? profile.fullName,
+        username: parsed.data.username ?? profile.username,
         phone: parsed.data.phone ?? profile.phone,
+        country: parsed.data.country ?? profile.country,
+        timezone: parsed.data.timezone ?? profile.timezone,
         bio: parsed.data.bio ?? profile.bio,
         avatarUrl: parsed.data.avatarUrl ?? profile.avatarUrl,
+        preferredTheme: parsed.data.preferredTheme ?? profile.preferredTheme,
+        preferredLanguage: parsed.data.preferredLanguage ?? profile.preferredLanguage,
+        notificationPreferences: parsed.data.notificationPreferences
+          ? { ...profile.notificationPreferences, ...parsed.data.notificationPreferences }
+          : profile.notificationPreferences,
         newsletterSubscribed:
           parsed.data.newsletterSubscribed !== undefined
             ? parsed.data.newsletterSubscribed
@@ -159,23 +168,36 @@ router.patch("/:supabaseUid", async (req, res) => {
       .where(eq(userProfilesTable.supabaseUid, supabaseUid))
       .returning();
 
-    res.json({
-      id: updated.id,
-      email: updated.email,
-      fullName: updated.fullName,
-      phone: updated.phone,
-      bio: updated.bio,
-      avatarUrl: updated.avatarUrl,
-      isEmailVerified: updated.isEmailVerified,
-      isPhoneVerified: updated.isPhoneVerified,
-      newsletterSubscribed: updated.newsletterSubscribed,
-      updatedAt: updated.updatedAt,
-    });
+    res.json(formatProfile(updated));
   } catch (err) {
     logger.error({ err, supabaseUid: req.params.supabaseUid }, "Error updating profile");
     const message = err instanceof Error ? err.message : "Failed to update profile";
     res.status(500).json({ error: message });
   }
 });
+
+// Helper function to format profile response
+function formatProfile(profile: typeof userProfilesTable.$inferSelect) {
+  return {
+    id: profile.id,
+    email: profile.email,
+    fullName: profile.fullName,
+    username: profile.username,
+    phone: profile.phone,
+    country: profile.country,
+    timezone: profile.timezone,
+    bio: profile.bio,
+    avatarUrl: profile.avatarUrl,
+    isEmailVerified: profile.isEmailVerified,
+    isPhoneVerified: profile.isPhoneVerified,
+    twoFactorEnabled: profile.twoFactorEnabled,
+    newsletterSubscribed: profile.newsletterSubscribed,
+    preferredTheme: profile.preferredTheme,
+    preferredLanguage: profile.preferredLanguage,
+    notificationPreferences: profile.notificationPreferences,
+    createdAt: profile.createdAt,
+    updatedAt: profile.updatedAt,
+  };
+}
 
 export default router;
