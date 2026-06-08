@@ -10,7 +10,7 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [location] = useLocation();
-  const { user, signOut, loading } = useAuth();
+  const { user, signOut, loading, isAdminUser } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -73,6 +73,13 @@ export function Navbar() {
             {loading ? null : user ? (
               <>
                 <NotificationBell />
+                {isAdminUser && (
+                  <Link href="/admin" data-testid="link-admin-panel">
+                    <Button variant="ghost" size="sm" className="text-amber-400 hover:text-amber-300 gap-1.5 font-semibold">
+                      Admin Panel
+                    </Button>
+                  </Link>
+                )}
                 <Link href="/dashboard" data-testid="link-my-plans">
                   <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5">
                     <User className="w-4 h-4" />
@@ -139,6 +146,13 @@ export function Navbar() {
               <div className="pt-4 mt-2 border-t border-border space-y-2">
                 {user ? (
                   <>
+                    {isAdminUser && (
+                      <Link href="/admin">
+                        <Button variant="outline" className="w-full border-amber-400 text-amber-400 gap-2 font-semibold hover:bg-amber-400/10">
+                          Admin Panel
+                        </Button>
+                      </Link>
+                    )}
                     <Link href="/dashboard">
                       <Button variant="outline" className="w-full border-border gap-2">
                         <User className="w-4 h-4" /> My Plans

@@ -7,6 +7,7 @@ import {
   getListConfigServersQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { AdminNavbar } from "@/components/layout/AdminNavbar";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
@@ -361,7 +362,9 @@ export default function Admin() {
   const pendingOrders = orders.filter((o) => o.status === "pending").length;
 
   return (
-    <div className="min-h-screen pt-24 pb-20 px-4">
+    <>
+      <AdminNavbar />
+      <div className="min-h-screen pt-24 pb-20 px-4">
       <div className="max-w-7xl mx-auto space-y-6">
 
         {/* Header */}
@@ -905,5 +908,7 @@ export default function Admin() {
         )}
       </div>
     </div>
+      </div>
+    </>
   );
 }
