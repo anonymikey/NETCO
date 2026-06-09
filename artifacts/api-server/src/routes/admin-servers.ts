@@ -72,6 +72,7 @@ router.post("/servers/metadata", async (req, res) => {
       .insert(configServersTable)
       .values({
         id,
+        name: String(serverName),
         serverName: String(serverName),
         network: String(network),
         appType: String(appType),
@@ -124,6 +125,7 @@ router.post("/servers", upload.single("configFile"), async (req, res) => {
       .insert(configServersTable)
       .values({
         id,
+        name: serverName,
         serverName,
         network,
         appType,

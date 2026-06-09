@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 
 export const configServersTable = pgTable("config_servers", {
   id: text("id").primaryKey(),
+  name: text("name").notNull(),
   serverName: text("server_name").notNull(),
   network: text("network").notNull(),
   appType: text("app_type").notNull(),
