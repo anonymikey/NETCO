@@ -94,10 +94,11 @@
    - Required for: email confirmations, password resets, announcements
    - If not set: Email endpoints will throw an error
 
-10. **`VITE_PUBLIC_URL`** (for email links)
-    - Format: Your application URL (e.g., `https://yourapp.vercel.app`)
-    - Used in email templates for "Browse Plans" and similar CTAs
-    - Optional; defaults to example placeholder if not set
+10. **`NETCO_PUBLIC_URL`** ⭐ REQUIRED (for email links in production)
+    - Format: Your frontend domain (e.g., `https://netco.anonymiketech.online`)
+    - Used in email templates for "Browse Plans" and "Download Your Config" links
+    - Critical for customer experience - must point to your actual deployed frontend
+    - If not set in production: Server will error and refuse to send emails
 
 11. **`LOG_LEVEL`** (for logging)
     - Values: `debug`, `info`, `warn`, `error`

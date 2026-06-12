@@ -114,6 +114,12 @@ async function sendOrderConfirmationAfterFulfillment(orderId: string, logger: Mi
       return;
     }
 
+    // Prevent duplicate emails
+    if (order.orderConfirmationSent) {
+      logger.info?.(`Order confirmation already sent for ${orderId}, skipping`);
+      return;
+    }
+
     // Get customer profile for name and email
     const profile = await db
       .select({
@@ -124,7 +130,18 @@ async function sendOrderConfirmationAfterFulfillment(orderId: string, logger: Mi
       .where(eq(userProfilesTable.phone, order.phone))
       .limit(1);
 
-    const customerEmail = profile[0]?.email ?? order.phone;
+    const customerEmail = profile[0]?.email;
+
+    // Validate email - reject phone numbers or missing emails
+    if (!customerEmail || !customerEmail.includes("@")) {
+      logger.warn?.({ orderId, phone: order.phone }, "No valid email found for order, skipping confirmation email");
+      // Mark as sent anyway to avoid retry loop
+      await db.update(ordersTable)
+        .set({ orderConfirmationSent: true, orderConfirmationSentAt: new Date() })
+        .where(eq(ordersTable.id, orderId));
+      return;
+    }
+
     const customerName = profile[0]?.fullName ?? undefined;
 
     // Get server info for plan name
@@ -152,6 +169,11 @@ async function sendOrderConfirmationAfterFulfillment(orderId: string, logger: Mi
       amount: Number(order.amount),
       createdAt: order.createdAt,
     });
+
+    // Mark email as sent atomically
+    await db.update(ordersTable)
+      .set({ orderConfirmationSent: true, orderConfirmationSentAt: new Date() })
+      .where(eq(ordersTable.id, orderId));
 
     logger.info?.(`Order confirmation email sent for order ${orderId} to ${customerEmail}`);
   } catch (err) {
@@ -279,11 +301,10 @@ router.get("/status/:reference", async (req, res) => {
       if (order) {
         if (order.status !== "completed") {
           await autoFulfillOrder(order.id, req.log as MinimalLogger);
-          // Send order confirmation email after successful fulfillment
-          // This runs in the background and doesn't block the response
-          sendOrderConfirmationAfterFulfillment(order.id, req.log as MinimalLogger).catch(() => {
-            // Error already logged in sendOrderConfirmationAfterFulfillment
-          });
+        }
+        // Send confirmation email if not already sent
+        if (!order.orderConfirmationSent) {
+          await sendOrderConfirmationAfterFulfillment(order.id, req.log as MinimalLogger);
         }
         const [freshOrder] = await db.select().from(ordersTable).where(eq(ordersTable.id, order.id)).limit(1);
         configUrl = freshOrder?.configUrl ?? null;

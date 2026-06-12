@@ -14,6 +14,8 @@ export const ordersTable = pgTable("orders", {
   status: text("status").notNull().default("pending"),
   paymentReference: text("payment_reference"),
   configUrl: text("config_url"),
+  orderConfirmationSent: boolean("order_confirmation_sent").notNull().default(false),
+  orderConfirmationSentAt: timestamp("order_confirmation_sent_at"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

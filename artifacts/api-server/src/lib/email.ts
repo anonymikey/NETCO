@@ -8,6 +8,17 @@ function getResend(): Resend {
   return new Resend(key);
 }
 
+function getPublicUrl(): string {
+  const url = process.env.NETCO_PUBLIC_URL || process.env.VITE_PUBLIC_URL;
+  if (!url) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("NETCO_PUBLIC_URL must be set in production");
+    }
+    return "http://localhost:5173";
+  }
+  return url;
+}
+
 const FROM = "NETCO VPN <onboarding@resend.dev>";
 
 function netcoHtml(title: string, body: string): string {
@@ -116,7 +127,7 @@ export async function sendWelcomeEmail(email: string) {
       </tr>
     </table>
     <div style="text-align:center;margin:32px 0;">
-      <a href="${process.env.VITE_PUBLIC_URL ?? "https://netco-platform.vercel.app"}/pricing"
+      <a href="${getPublicUrl()}/pricing"
          style="display:inline-block;background:linear-gradient(135deg,#00e5ff,#0077b6);color:#0a0f1e;font-weight:700;font-size:15px;padding:14px 36px;border-radius:8px;text-decoration:none;letter-spacing:0.5px;">
         Browse Plans
       </a>
@@ -257,7 +268,7 @@ export async function sendOrderConfirmationEmail(params: OrderConfirmationParams
 
     <!-- Download Link -->
     <div style="text-align:center;margin:32px 0;">
-      <a href="${process.env.VITE_PUBLIC_URL ?? "https://netco-platform.vercel.app"}/dashboard"
+      <a href="${getPublicUrl()}/dashboard"
          style="display:inline-block;background:linear-gradient(135deg,#00e5ff,#0077b6);color:#0a0f1e;font-weight:700;font-size:15px;padding:14px 36px;border-radius:8px;text-decoration:none;letter-spacing:0.5px;">
         Download Your Config
       </a>
