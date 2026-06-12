@@ -11,6 +11,8 @@ import authEmailRouter from "./auth-email";
 import authProfileRouter from "./auth-profile";
 import adminOrdersRouter from "./admin-orders";
 import adminAnnouncementsRouter from "./admin-announcements";
+import notificationsRouter from "./notifications";
+import adminNotificationsRouter from "./admin-notifications";
 
 const router: IRouter = Router();
 
@@ -25,7 +27,9 @@ router.use("/admin", adminServersRouter);
 router.use("/admin", statsRouter);
 router.use("/admin", adminOrdersRouter);
 router.use("/admin", adminAnnouncementsRouter);
+router.use("/admin", adminNotificationsRouter);
 router.use("/auth/email", authEmailRouter);
 router.use("/auth/profile", authProfileRouter);
+router.use(notificationsRouter);
 
 export default router;
