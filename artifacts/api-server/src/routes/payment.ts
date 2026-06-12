@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { randomUUID } from "crypto";
-import { db, ordersTable, configServersTable, userPlansTable } from "@workspace/db";
+import { db, ordersTable, configServersTable, userPlansTable, userProfilesTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { InitiatePaymentBody } from "@workspace/api-zod";
 import path from "path";
 import { downloadConfigFile } from "../lib/storage";
+import { sendOrderConfirmationEmail } from "../lib/email.js";
 
 const router = Router();
 
@@ -103,6 +104,59 @@ async function autoFulfillOrder(orderId: string, logger: MinimalLogger) {
     logger.info?.(`Auto-fulfilled order ${orderId} with config ${server.serverName}`);
   } catch (err) {
     logger.error?.(`Auto-fulfill failed for order ${orderId}: ${err}`);
+  }
+}
+
+async function sendOrderConfirmationAfterFulfillment(orderId: string, logger: MinimalLogger): Promise<void> {
+  try {
+    const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, orderId)).limit(1);
+    if (!order || order.status !== "completed") {
+      return;
+    }
+
+    // Get customer profile for name and email
+    const profile = await db
+      .select({
+        email: userProfilesTable.email,
+        fullName: userProfilesTable.fullName,
+      })
+      .from(userProfilesTable)
+      .where(eq(userProfilesTable.phone, order.phone))
+      .limit(1);
+
+    const customerEmail = profile[0]?.email ?? order.phone;
+    const customerName = profile[0]?.fullName ?? undefined;
+
+    // Get server info for plan name
+    const [server] = await db
+      .select()
+      .from(configServersTable)
+      .where(
+        and(
+          eq(configServersTable.network, order.network),
+          eq(configServersTable.appType, order.appType),
+          eq(configServersTable.duration, order.duration),
+          eq(configServersTable.status, "active")
+        )
+      )
+      .limit(1);
+
+    const planName = server?.serverName ?? `${order.network} - ${order.duration.charAt(0).toUpperCase() + order.duration.slice(1)}`;
+
+    await sendOrderConfirmationEmail({
+      email: customerEmail,
+      fullName: customerName,
+      orderId,
+      planName,
+      network: order.network.charAt(0).toUpperCase() + order.network.slice(1),
+      amount: Number(order.amount),
+      createdAt: order.createdAt,
+    });
+
+    logger.info?.(`Order confirmation email sent for order ${orderId} to ${customerEmail}`);
+  } catch (err) {
+    logger.error?.(`Failed to send order confirmation email for order ${orderId}: ${err}`);
+    // Don't throw - email failures should not affect payment flow
   }
 }
 
@@ -225,6 +279,11 @@ router.get("/status/:reference", async (req, res) => {
       if (order) {
         if (order.status !== "completed") {
           await autoFulfillOrder(order.id, req.log as MinimalLogger);
+          // Send order confirmation email after successful fulfillment
+          // This runs in the background and doesn't block the response
+          sendOrderConfirmationAfterFulfillment(order.id, req.log as MinimalLogger).catch(() => {
+            // Error already logged in sendOrderConfirmationAfterFulfillment
+          });
         }
         const [freshOrder] = await db.select().from(ordersTable).where(eq(ordersTable.id, order.id)).limit(1);
         configUrl = freshOrder?.configUrl ?? null;

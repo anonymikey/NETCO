@@ -168,3 +168,123 @@ export async function sendBulkAnnouncement(emails: string[], subject: string, ti
 
   return { succeeded, failed, total: emails.length };
 }
+
+interface OrderConfirmationParams {
+  email: string;
+  fullName: string | null | undefined;
+  orderId: string;
+  planName: string;
+  network: string;
+  amount: number;
+  createdAt: Date | string;
+  supportEmail?: string;
+}
+
+export async function sendOrderConfirmationEmail(params: OrderConfirmationParams) {
+  const {
+    email,
+    fullName,
+    orderId,
+    planName,
+    network,
+    amount,
+    createdAt,
+    supportEmail = "support@netco.io",
+  } = params;
+
+  const customerName = fullName && fullName.trim() ? fullName : "Valued Customer";
+  const createdAtDate = createdAt instanceof Date ? createdAt : new Date(createdAt);
+  const formattedDate = createdAtDate.toLocaleDateString("en-KE", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const formattedTime = createdAtDate.toLocaleTimeString("en-KE", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
+  const body = `
+    <h2 style="color:#ffffff;font-size:22px;margin:0 0 12px;">Order Confirmed! 🎉</h2>
+    <p style="color:#94a3b8;font-size:15px;line-height:1.6;margin:0 0 28px;">
+      Hi ${customerName},<br/><br/>
+      Your VPN configuration has been successfully purchased and is ready to download immediately.
+    </p>
+
+    <!-- Order Details Box -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;background:#0a1929;border-radius:8px;border:1px solid #1e2d4a;overflow:hidden;">
+      <tr>
+        <td style="padding:24px 20px;border-bottom:1px solid #1e2d4a;">
+          <p style="color:#4fc3f7;font-size:12px;font-weight:700;letter-spacing:1px;margin:0 0 4px;">ORDER ID</p>
+          <p style="color:#ffffff;font-size:16px;font-weight:600;margin:0;">${orderId}</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:16px 20px;border-bottom:1px solid #1e2d4a;">
+          <p style="color:#4fc3f7;font-size:12px;font-weight:700;letter-spacing:1px;margin:0 0 4px;">PLAN DETAILS</p>
+          <p style="color:#94a3b8;font-size:14px;margin:0;">
+            <strong style="color:#ffffff;">${planName}</strong> for <strong style="color:#ffffff;">${network}</strong>
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:16px 20px;border-bottom:1px solid #1e2d4a;">
+          <p style="color:#4fc3f7;font-size:12px;font-weight:700;letter-spacing:1px;margin:0 0 4px;">AMOUNT PAID</p>
+          <p style="color:#00e5ff;font-size:18px;font-weight:700;margin:0;">KES ${amount.toLocaleString("en-KE")}</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:16px 20px;">
+          <p style="color:#4fc3f7;font-size:12px;font-weight:700;letter-spacing:1px;margin:0 0 4px;">PURCHASE DATE & TIME</p>
+          <p style="color:#94a3b8;font-size:14px;margin:0;">${formattedDate} at ${formattedTime}</p>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Next Steps -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;">
+      <tr>
+        <td style="background:#0a1929;border-radius:8px;padding:16px 20px;border-left:4px solid #00e5ff;">
+          <p style="color:#00e5ff;font-size:12px;font-weight:700;letter-spacing:1px;margin:0 0 8px;">NEXT STEPS</p>
+          <p style="color:#94a3b8;font-size:14px;margin:0;">
+            <strong style="color:#ffffff;">Your configuration is ready!</strong><br/>
+            Log in to your NETCO account to download your VPN config file immediately. Your config is device-locked for security.
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Download Link -->
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${process.env.VITE_PUBLIC_URL ?? "https://netco-platform.vercel.app"}/dashboard"
+         style="display:inline-block;background:linear-gradient(135deg,#00e5ff,#0077b6);color:#0a0f1e;font-weight:700;font-size:15px;padding:14px 36px;border-radius:8px;text-decoration:none;letter-spacing:0.5px;">
+        Download Your Config
+      </a>
+    </div>
+
+    <!-- Support Info -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:32px 0;padding:20px;background:#0a1929;border-radius:8px;border:1px solid #1e2d4a;">
+      <tr>
+        <td>
+          <p style="color:#94a3b8;font-size:13px;margin:0 0 8px;">
+            <strong style="color:#ffffff;">Questions or issues?</strong>
+          </p>
+          <p style="color:#94a3b8;font-size:13px;margin:0;">
+            Contact our support team at <a href="mailto:${supportEmail}" style="color:#4fc3f7;text-decoration:none;font-weight:600;">${supportEmail}</a>
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <p style="color:#64748b;font-size:12px;text-align:center;margin:28px 0 0;">
+      This email was sent because an order was placed using this email address. If you didn't make this purchase, please contact support immediately.
+    </p>`;
+
+  return getResend().emails.send({
+    from: FROM,
+    to: email,
+    subject: `Order Confirmation — Your NETCO VPN Config is Ready (${orderId})`,
+    html: netcoHtml("Order Confirmation", body),
+  });
+}
