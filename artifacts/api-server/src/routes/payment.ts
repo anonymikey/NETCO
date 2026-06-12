@@ -191,8 +191,29 @@ router.post("/initiate", async (req, res) => {
     }
 
     const { phone, amount, orderId } = parsed.data;
-    const reference = `NETCO-${randomUUID().slice(0, 8).toUpperCase()}`;
     const phoneFormatted = normalizePhone(phone);
+
+    // Validate amount (PayFlow minimum is 1 KES)
+    if (Number(amount) < 1) {
+      res.status(400).json({ error: "Invalid amount", message: "Amount must be at least KES 1" });
+      return;
+    }
+
+    // Check if payment already initiated for this order
+    const [existingOrder] = await db.select().from(ordersTable)
+      .where(eq(ordersTable.id, orderId))
+      .limit(1);
+
+    if (existingOrder?.paymentReference) {
+      res.status(400).json({
+        error: "Payment already initiated",
+        message: "This order already has a pending payment",
+        paymentReference: existingOrder.paymentReference,
+      });
+      return;
+    }
+
+    const reference = `NETCO-${randomUUID().slice(0, 8).toUpperCase()}`;
 
     req.log.info({ phone: phoneFormatted, amount, orderId, reference }, "Initiating PayFlow STK push");
 
@@ -213,6 +234,7 @@ router.post("/initiate", async (req, res) => {
     const pfData = (await pfRes.json()) as {
       success: boolean;
       message?: string;
+      error_code?: string;
       checkout_request_id?: string;
       data?: { checkout_request_id?: string };
     };
@@ -220,9 +242,20 @@ router.post("/initiate", async (req, res) => {
     req.log.info({ pfData, status: pfRes.status }, "PayFlow STK response");
 
     if (!pfRes.ok || !pfData.success) {
-      res.status(502).json({
-        error: "Payment gateway error",
-        message: pfData.message ?? "STK Push failed. Please try again.",
+      const errorCode = pfData.error_code || "UNKNOWN";
+      const errorMap: Record<string, { status: number; message: string }> = {
+        "AUTH_FAILED": { status: 503, message: "Payment service authentication failed. Contact support." },
+        "INVALID_PHONE": { status: 400, message: "Phone number format is invalid. Use Kenyan format." },
+        "INVALID_AMOUNT": { status: 400, message: "Amount must be at least KES 1" },
+        "ACCOUNT_NOT_FOUND": { status: 503, message: "Payment account not configured. Contact support." },
+        "RATE_LIMITED": { status: 429, message: "Too many payment requests. Please try again in a moment." },
+        "MPESA_ERROR": { status: 502, message: "M-Pesa service error. Please try again shortly." },
+      };
+
+      const error = errorMap[errorCode] || { status: 502, message: pfData.message ?? "Payment initiation failed" };
+      res.status(error.status).json({
+        error: errorCode,
+        message: error.message,
       });
       return;
     }
@@ -260,6 +293,7 @@ router.get("/status/:reference", async (req, res) => {
     const pfData = (await pfRes.json()) as {
       success: boolean;
       message?: string;
+      error_code?: string;
       status?: string;
       data?: {
         status?: string;
@@ -272,7 +306,13 @@ router.get("/status/:reference", async (req, res) => {
     req.log.info({ pfData, reference }, "PayFlow status check");
 
     if (!pfRes.ok || !pfData.success) {
-      res.json({ reference, status: "pending", message: pfData.message ?? null, completedAt: null });
+      const errorCode = pfData.error_code || "UNKNOWN";
+      res.status(pfRes.status || 502).json({
+        reference,
+        status: "error",
+        message: pfData.message ?? "Failed to check payment status",
+        error: errorCode,
+      });
       return;
     }
 
@@ -321,7 +361,12 @@ router.get("/status/:reference", async (req, res) => {
     });
   } catch (err) {
     req.log.error({ err, reference }, "PayFlow status check failed");
-    res.json({ reference, status: "pending", message: null, completedAt: null, configUrl: null });
+    res.status(503).json({
+      reference,
+      status: "error",
+      message: "Failed to check payment status. Please try again.",
+      error: "SERVICE_UNAVAILABLE",
+    });
   }
 });
 
