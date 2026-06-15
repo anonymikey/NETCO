@@ -1,12 +1,29 @@
-import { Router } from "express";
+import { Router, type Request } from "express";
 import { randomUUID } from "crypto";
-import { db, ordersTable, configServersTable, userPlansTable } from "@workspace/db";
+import { db, ordersTable, configServersTable, userPlansTable, userProfilesTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { CreateOrderBody } from "@workspace/api-zod";
 import path from "path";
-import { downloadConfigFile } from "../lib/storage";
+import { downloadConfigFile, getSupabaseAdmin } from "../lib/storage";
 
 const router = Router();
+
+async function resolveUserIdFromRequest(req: Request): Promise<string | null> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) return null;
+
+  const token = authHeader.slice("Bearer ".length);
+  const { data: { user }, error } = await getSupabaseAdmin().auth.getUser(token);
+  if (error || !user) return null;
+
+  const [profile] = await db
+    .select({ id: userProfilesTable.id })
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.supabaseUid, user.id))
+    .limit(1);
+
+  return profile?.id ?? null;
+}
 
 function expiryFromDuration(duration: string): Date {
   const now = new Date();
@@ -24,6 +41,12 @@ router.post("/", async (req, res) => {
       return;
     }
 
+    const userId = await resolveUserIdFromRequest(req);
+    if (!userId) {
+      res.status(401).json({ error: "Authentication required. Sign in and try again." });
+      return;
+    }
+
     const body = parsed.data;
     const id = randomUUID();
     const amount = body.amount ?? calculateAmount(body.network, body.duration);
@@ -32,6 +55,7 @@ router.post("/", async (req, res) => {
       .insert(ordersTable)
       .values({
         id,
+        userId,
         packageId: body.packageId,
         network: body.network,
         duration: body.duration,
