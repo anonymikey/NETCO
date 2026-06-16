@@ -42,7 +42,7 @@ export function FreeConfigDownloadModal({ isOpen, onClose, server }: FreeConfigD
     setError("");
 
     try {
-      const response = await fetch(apiUrl("/orders/free"), {
+      const response = await fetch(apiUrl("/api/orders/free"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
