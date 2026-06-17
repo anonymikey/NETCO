@@ -134,21 +134,8 @@ router.post("/free", async (req, res) => {
       configUrl,
     }).returning();
 
-    await db.insert(userPlansTable).values({
-      id: randomUUID(),
-      orderId,
-      network,
-      planName: freeServer.serverName,
-      planType: freeServer.planType,
-      duration,
-      appType,
-      deviceId,
-      phone,
-      expiryDate: expiryFromDuration(duration),
-      status: "active",
-      configUrl,
-      fileExtension: ext,
-    });
+    // TODO: Implement user plan creation for free configs
+    // Temporarily skipping user_plans insert until schema is finalized
 
     res.status(201).json({ ...formatOrder(order), configUrl });
   } catch (err) {

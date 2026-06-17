@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Shield, Zap, Globe, Cpu, ArrowRight, Server, Check, Gift, Lock, Smartphone, Wifi, Clock, Users, TrendingUp, Headphones } from "lucide-react";
@@ -17,8 +17,16 @@ function networkColor(network: string) {
 }
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [, navigate] = useLocation();
+  
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (!loading && user) {
+      navigate("/dashboard");
+    }
+  }, [user, loading, navigate]);
+
   const { data: stats } = useGetPlatformStats();
   const { data: packages } = useListPackages();
   const { data: servers = [] } = useListConfigServers();
