@@ -5,6 +5,7 @@ import { Shield, Zap, Globe, Cpu, ArrowRight, Server, Check, Gift, Lock, Smartph
 import { useGetPlatformStats, useListPackages, useListConfigServers } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { FreeConfigDownloadModal } from "@/components/free-config-download-modal";
+import { AppGallerySection } from "@/components/app-gallery-section";
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -210,6 +211,9 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      {/* App Gallery Section */}
+      <AppGallerySection />
 
       {/* Features Section */}
       <section className="py-20 px-4 bg-card/30 border-t border-border">

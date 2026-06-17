@@ -8,6 +8,7 @@ import { useListPlans, getListPlansQueryKey } from "@workspace/api-client-react"
 import { Search, Download, Clock, CheckCircle, XCircle, Smartphone, Wifi, RefreshCw, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { initServerStatusUpdates, subscribeToServerStatus, stopServerStatusUpdates } from "@/lib/server-status-realtime";
+import { AppShowcase } from "@/components/app-showcase";
 
 function formatTimeLeft(expiryDate: string) {
   const expiry = new Date(expiryDate);
@@ -75,6 +76,26 @@ export default function Dashboard() {
             My <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Dashboard</span>
           </h1>
           <p className="text-muted-foreground">Look up your active VPN configs and plan details</p>
+        </div>
+
+        {/* App Showcase - Compact */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="h-96">
+            <AppShowcase
+              app="http-custom"
+              title="HTTP Custom"
+              description="Configure your VPN with advanced options"
+              playStoreUrl="https://play.google.com/store/apps/details?id=xyz.easypro.httpcustom&pcampaignid=web_share"
+            />
+          </div>
+          <div className="h-96">
+            <AppShowcase
+              app="http-injector"
+              title="HTTP Injector"
+              description="Powerful tunneling and diagnostic tools"
+              playStoreUrl="https://play.google.com/store/apps/details?id=com.evozi.injector&pcampaignid=web_share"
+            />
+          </div>
         </div>
 
         <div className="glass-card rounded-xl p-6 space-y-4" data-testid="search-panel">
