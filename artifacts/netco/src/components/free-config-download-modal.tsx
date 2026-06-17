@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { X, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiUrl } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 
 interface FreeConfigDownloadModalProps {
   isOpen: boolean;
@@ -42,9 +43,19 @@ export function FreeConfigDownloadModal({ isOpen, onClose, server }: FreeConfigD
     setError("");
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setError("You must be signed in to download configs");
+        setState("error");
+        return;
+      }
+
       const response = await fetch(apiUrl("/api/orders/free"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
           packageId: server.id,
           network: server.network,

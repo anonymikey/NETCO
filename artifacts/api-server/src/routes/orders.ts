@@ -76,73 +76,86 @@ router.post("/", async (req, res) => {
 });
 
 router.post("/free", async (req, res) => {
-  const { packageId, network, duration, appType, deviceId, phone } = req.body as {
-    packageId?: string;
-    network?: string;
-    duration?: string;
-    appType?: string;
-    deviceId?: string;
-    phone?: string;
-  };
+  try {
+    const userId = await resolveUserIdFromRequest(req);
+    if (!userId) {
+      res.status(401).json({ error: "Authentication required. Sign in and try again." });
+      return;
+    }
 
-  if (!network || !duration || !appType || !deviceId || !phone) {
-    res.status(400).json({ error: "Missing required fields: network, duration, appType, deviceId, phone" });
-    return;
-  }
+    const { packageId, network, duration, appType, deviceId, phone } = req.body as {
+      packageId?: string;
+      network?: string;
+      duration?: string;
+      appType?: string;
+      deviceId?: string;
+      phone?: string;
+    };
 
-  const [freeServer] = await db
-    .select()
-    .from(configServersTable)
-    .where(
-      and(
-        eq(configServersTable.network, network),
-        eq(configServersTable.appType, appType),
-        eq(configServersTable.duration, duration),
-        eq(configServersTable.status, "active"),
-        eq(configServersTable.isFree, true)
+    if (!network || !duration || !appType || !deviceId || !phone) {
+      res.status(400).json({ error: "Missing required fields: network, duration, appType, deviceId, phone" });
+      return;
+    }
+
+    const [freeServer] = await db
+      .select()
+      .from(configServersTable)
+      .where(
+        and(
+          eq(configServersTable.network, network),
+          eq(configServersTable.appType, appType),
+          eq(configServersTable.duration, duration),
+          eq(configServersTable.status, "active"),
+          eq(configServersTable.isFree, true)
+        )
       )
-    )
-    .limit(1);
+      .limit(1);
 
-  if (!freeServer) {
-    res.status(404).json({ error: "No free config available for this combination" });
-    return;
+    if (!freeServer) {
+      res.status(404).json({ error: "No free config available for this combination" });
+      return;
+    }
+
+    const orderId = randomUUID();
+    const configUrl = `/api/orders/${orderId}/download`;
+    const ext = path.extname(freeServer.originalName).toLowerCase();
+
+    const [order] = await db.insert(ordersTable).values({
+      id: orderId,
+      userId,
+      packageId: packageId ?? freeServer.id,
+      network,
+      duration,
+      appType,
+      deviceId,
+      phone,
+      amount: "0",
+      status: "completed",
+      configUrl,
+    }).returning();
+
+    await db.insert(userPlansTable).values({
+      id: randomUUID(),
+      orderId,
+      network,
+      planName: freeServer.serverName,
+      planType: freeServer.planType,
+      duration,
+      appType,
+      deviceId,
+      phone,
+      expiryDate: expiryFromDuration(duration),
+      status: "active",
+      configUrl,
+      fileExtension: ext,
+    });
+
+    res.status(201).json({ ...formatOrder(order), configUrl });
+  } catch (err) {
+    req.log.error({ err, body: req.body }, "Error creating free order");
+    const message = err instanceof Error ? err.message : "Failed to create free order";
+    res.status(500).json({ error: message });
   }
-
-  const orderId = randomUUID();
-  const configUrl = `/api/orders/${orderId}/download`;
-  const ext = path.extname(freeServer.originalName).toLowerCase();
-
-  const [order] = await db.insert(ordersTable).values({
-    id: orderId,
-    packageId: packageId ?? freeServer.id,
-    network,
-    duration,
-    appType,
-    deviceId,
-    phone,
-    amount: "0",
-    status: "completed",
-    configUrl,
-  }).returning();
-
-  await db.insert(userPlansTable).values({
-    id: randomUUID(),
-    orderId,
-    network,
-    planName: freeServer.serverName,
-    planType: freeServer.planType,
-    duration,
-    appType,
-    deviceId,
-    phone,
-    expiryDate: expiryFromDuration(duration),
-    status: "active",
-    configUrl,
-    fileExtension: ext,
-  });
-
-  res.status(201).json({ ...formatOrder(order), configUrl });
 });
 
 router.get("/:id", async (req, res) => {
