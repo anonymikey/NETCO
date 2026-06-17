@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { AppShowcase } from "@/components/app-showcase";
 import { Smartphone, Download, Key, Upload, Play, Lightbulb, ExternalLink } from "lucide-react";
 
 const APPS = [
@@ -10,7 +11,7 @@ const APPS = [
     name: "HTTP Custom",
     fileExt: ".hc",
     deviceLabel: "Device ID",
-    playStoreUrl: "https://play.google.com/store/apps/details?id=xyz.wossy.httpcustom",
+    playStoreUrl: "https://play.google.com/store/apps/details?id=xyz.easypro.httpcustom&pcampaignid=web_share",
     icon: "HC",
     color: "text-primary",
     steps: [
@@ -57,7 +58,7 @@ const APPS = [
     name: "HTTP Injector",
     fileExt: ".ehi",
     deviceLabel: "HWID",
-    playStoreUrl: "https://play.google.com/store/apps/details?id=com.evozi.injector",
+    playStoreUrl: "https://play.google.com/store/apps/details?id=com.evozi.injector&pcampaignid=web_share",
     icon: "HI",
     color: "text-secondary",
     steps: [
@@ -113,6 +114,26 @@ export default function HowToConnect() {
             How to <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Connect</span>
           </h1>
           <p className="text-muted-foreground text-lg">Step-by-step guides for both supported VPN apps</p>
+        </div>
+
+        {/* App Showcase */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
+          <div className="h-96">
+            <AppShowcase
+              app="http-custom"
+              title="HTTP Custom"
+              description="Configure your VPN with advanced options"
+              playStoreUrl="https://play.google.com/store/apps/details?id=xyz.easypro.httpcustom&pcampaignid=web_share"
+            />
+          </div>
+          <div className="h-96">
+            <AppShowcase
+              app="http-injector"
+              title="HTTP Injector"
+              description="Powerful tunneling and diagnostic tools"
+              playStoreUrl="https://play.google.com/store/apps/details?id=com.evozi.injector&pcampaignid=web_share"
+            />
+          </div>
         </div>
 
         {/* App selector */}

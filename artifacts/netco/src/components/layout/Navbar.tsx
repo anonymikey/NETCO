@@ -26,6 +26,7 @@ export function Navbar() {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/pricing", label: "Pricing" },
+    { href: "/wifi", label: "WiFi Plans" },
     { href: "/how-to-connect", label: "How to Connect" },
     { href: "/server-status", label: "Status" },
     { href: "/faqs", label: "FAQs" },
