@@ -14,6 +14,7 @@ import Pricing from "@/pages/pricing";
 import Checkout from "@/pages/checkout";
 import Dashboard from "@/pages/dashboard";
 import HowToConnect from "@/pages/how-to-connect";
+import WiFi from "@/pages/wifi";
 import ServerStatus from "@/pages/server-status";
 import FAQs from "@/pages/faqs";
 import Contact from "@/pages/contact";
@@ -69,6 +70,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/account" component={Account} />
       <Route path="/how-to-connect" component={HowToConnect} />
+      <Route path="/wifi" component={WiFi} />
       <Route path="/server-status" component={ServerStatus} />
       <Route path="/faqs" component={FAQs} />
       <Route path="/contact" component={Contact} />
