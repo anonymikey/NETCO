@@ -2,12 +2,9 @@ import { Router } from "express";
 import { randomUUID } from "crypto";
 import { db, ordersTable, configServersTable, userPlansTable } from "@workspace/db";
 import { eq, desc, like, or, and } from "drizzle-orm";
-import path from "path";
-import fs from "fs";
+import { downloadConfigFile } from "../lib/storage";
 
 const router = Router();
-
-const UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
 
 function expiryFromDuration(duration: string): Date {
   const now = new Date();
@@ -90,9 +87,12 @@ router.post("/orders/:id/fulfill", async (req, res) => {
       return;
     }
 
-    const filePath = path.join(UPLOADS_DIR, server.filename);
-    if (!fs.existsSync(filePath)) {
-      res.status(422).json({ error: "Config file not found on disk" });
+    // Verify config file exists in Supabase Storage
+    try {
+      await downloadConfigFile(server.filename);
+    } catch (err) {
+      req.log.error({ err, filename: server.filename }, "Config file not found in storage");
+      res.status(422).json({ error: "Config file not found in storage" });
       return;
     }
 
