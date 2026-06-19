@@ -9,6 +9,7 @@ import { Search, Download, Clock, CheckCircle, XCircle, Smartphone, Wifi, Refres
 import { useToast } from "@/hooks/use-toast";
 import { initServerStatusUpdates, subscribeToServerStatus, stopServerStatusUpdates } from "@/lib/server-status-realtime";
 import { AppShowcase } from "@/components/app-showcase";
+import { FreeConfigDownloadModal } from "@/components/free-config-download-modal";
 
 function formatTimeLeft(expiryDate: string) {
   const expiry = new Date(expiryDate);
@@ -29,6 +30,7 @@ export default function Dashboard() {
   const [deviceId, setDeviceId] = useState("");
   const [searchParams, setSearchParams] = useState<{ phone?: string; deviceId?: string } | null>(null);
   const [serverStatus, setServerStatus] = useState<Record<string, any>>({});
+  const [freeConfigModal, setFreeConfigModal] = useState<{ isOpen: boolean; server?: any }>({ isOpen: false });
 
   // Initialize real-time server status updates
   useEffect(() => {
@@ -246,11 +248,13 @@ export default function Dashboard() {
               {activeServers.map((server: any) => (
                 <div
                   key={server.id}
-                  className="group glass-card rounded-xl p-5 border border-border hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/20 space-y-4"
+                  className="group relative glass-card rounded-xl p-5 border border-border hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/20 flex flex-col gap-4"
                 >
                   {server.isFree && (
-                    <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 text-xs font-bold">
-                      <Gift className="w-3 h-3" /> FREE
+                    <div className="absolute -top-3 -right-3">
+                      <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 text-xs font-bold">
+                        <Gift className="w-3 h-3" /> FREE
+                      </div>
                     </div>
                   )}
 
@@ -271,12 +275,40 @@ export default function Dashboard() {
                     </span>
                   </div>
 
-                  <Button
-                    onClick={() => navigate("/pricing")}
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm"
-                  >
-                    View Plans <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
+                  {/* App Type */}
+                  <div className="pt-2 border-t border-border">
+                    <p className="text-xs text-muted-foreground mb-1">Compatible with:</p>
+                    <p className="text-sm font-medium flex items-center gap-1.5">
+                      <Smartphone className="w-3.5 h-3.5 text-primary" />
+                      {server.appType === "http_custom" ? "HTTP Custom (.hc)" : "HTTP Injector (.ehi)"}
+                    </p>
+                  </div>
+
+                  {/* File Info */}
+                  {server.fileSize && (
+                    <div className="text-xs text-muted-foreground -mt-2">
+                      File size: {(server.fileSize / 1024).toFixed(1)} KB
+                    </div>
+                  )}
+
+                  {/* CTA Button */}
+                  <div className="mt-auto">
+                    {server.isFree ? (
+                      <Button
+                        onClick={() => setFreeConfigModal({ isOpen: true, server })}
+                        className="w-full bg-success text-success-foreground hover:bg-success/90 font-medium text-sm"
+                      >
+                        <Download className="w-4 h-4 mr-2" /> Download Free Config
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => navigate("/pricing")}
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm"
+                      >
+                        View Plans <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -300,6 +332,12 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      <FreeConfigDownloadModal
+        isOpen={freeConfigModal.isOpen}
+        onClose={() => setFreeConfigModal({ isOpen: false })}
+        server={freeConfigModal.server}
+      />
     </div>
   );
 }
