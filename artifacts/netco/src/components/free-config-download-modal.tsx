@@ -45,7 +45,7 @@ export function FreeConfigDownloadModal({ isOpen, onClose, server }: FreeConfigD
   const [phone, setPhone] = useState("");
   const [state, setState] = useState<State>("form");
   const [error, setError] = useState("");
-  const appInfo = getAppInfo(server.appType);
+  const appInfo = getAppInfo(server?.appType);
 
   const handleDownload = async () => {
     if (!deviceId.trim()) {
@@ -115,7 +115,7 @@ export function FreeConfigDownloadModal({ isOpen, onClose, server }: FreeConfigD
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !server) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
