@@ -319,7 +319,7 @@ export default function Dashboard() {
               { icon: Wifi, label: "Server Status", href: "/server-status", color: "text-success", bg: "bg-success/5 border-success/20" },
             ].map(({ icon: Icon, label, href, color, bg }) => (
               <Link key={href} href={href}>
-                <div className={`glass-card rounded-xl p-5 flex items-center gap-4 cursor-pointer hover:border-primary/50 transition-all ${bg}`} data-testid={`link-quick-${label.toLowerCase().replace(/\s+/g, "-")}`}>
+                <div className={`glass-card rounded-xl p-5 flex items-center gap-4 cursor-pointer hover:border-primary/50 transition-all ${bg}`} data-testid={`link-quick-${label.toLowerCase().replace(/\s+/g, '-')}`}>
                   <Icon className={`w-6 h-6 ${color}`} />
                   <span className="font-medium">{label}</span>
                 </div>
