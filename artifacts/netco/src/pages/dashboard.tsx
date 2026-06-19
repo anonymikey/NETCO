@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useListPlans, getListPlansQueryKey, useListConfigServers } from "@workspace/api-client-react";
-import { Search, Download, Clock, CheckCircle, XCircle, Smartphone, Wifi, RefreshCw, AlertCircle, Gift, Server, ArrowRight } from "lucide-react";
+import { Search, Download, Clock, CheckCircle, XCircle, Smartphone, Wifi, RefreshCw, AlertCircle, Gift, Server, ArrowRight, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { initServerStatusUpdates, subscribeToServerStatus, stopServerStatusUpdates } from "@/lib/server-status-realtime";
+import { FreeConfigDownloadModal } from "@/components/free-config-download-modal";
 import { AppShowcase } from "@/components/app-showcase";
 
 function formatTimeLeft(expiryDate: string) {
@@ -29,6 +30,7 @@ export default function Dashboard() {
   const [deviceId, setDeviceId] = useState("");
   const [searchParams, setSearchParams] = useState<{ phone?: string; deviceId?: string } | null>(null);
   const [serverStatus, setServerStatus] = useState<Record<string, any>>({});
+  const [selectedFreeConfig, setSelectedFreeConfig] = useState<any>(null);
 
   // Initialize real-time server status updates
   useEffect(() => {
@@ -246,37 +248,63 @@ export default function Dashboard() {
               {activeServers.map((server: any) => (
                 <div
                   key={server.id}
-                  className="group glass-card rounded-xl p-5 border border-border hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/20 space-y-4"
+                  className={`group glass-card rounded-xl p-5 border transition-all hover:shadow-lg relative overflow-hidden ${
+                    server.isFree 
+                      ? "border-yellow-400/30 bg-yellow-400/5 hover:border-yellow-400/50 hover:shadow-yellow-400/20" 
+                      : "border-border hover:border-primary/50 hover:shadow-primary/20"
+                  } space-y-4`}
                 >
+                  {/* Background accent for free configs */}
                   {server.isFree && (
-                    <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 text-xs font-bold">
-                      <Gift className="w-3 h-3" /> FREE
-                    </div>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-400/10 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none" />
                   )}
 
-                  <div>
-                    <h3 className="font-bold text-foreground">{server.serverName}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">{server.originalName}</p>
-                  </div>
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <h3 className="font-bold text-foreground leading-tight">{server.serverName}</h3>
+                        <p className="text-xs text-muted-foreground mt-1.5">{server.originalName}</p>
+                      </div>
+                      {server.isFree && (
+                        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-yellow-400/20 text-yellow-400 border border-yellow-400/40 text-xs font-bold whitespace-nowrap">
+                          <Gift className="w-3 h-3" /> FREE
+                        </div>
+                      )}
+                    </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium border ${networkColor(server.network)}`}>
-                      {capitalize(server.network)}
-                    </span>
-                    <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium border border-primary/30 bg-primary/5 text-primary">
-                      {capitalize(server.planType)}
-                    </span>
-                    <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium border border-secondary/30 bg-secondary/5 text-secondary">
-                      {capitalize(server.duration)}
-                    </span>
-                  </div>
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium border ${networkColor(server.network)}`}>
+                        {capitalize(server.network)}
+                      </span>
+                      <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium border border-secondary/30 bg-secondary/5 text-secondary">
+                        {server.appType === "http_custom" ? "HTTP Custom" : "HTTP Injector"}
+                      </span>
+                      <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium border border-primary/30 bg-primary/5 text-primary">
+                        {capitalize(server.duration)}
+                      </span>
+                    </div>
 
-                  <Button
-                    onClick={() => navigate("/pricing")}
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm"
-                  >
-                    View Plans <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
+                    {server.isFree ? (
+                      <div className="mt-4 pt-4 border-t border-yellow-400/20 space-y-2">
+                        <p className="text-xs text-muted-foreground">Download this free config to get started instantly.</p>
+                        <Button
+                          onClick={() => setSelectedFreeConfig(server)}
+                          className="w-full bg-yellow-500 hover:bg-yellow-600 text-yellow-950 font-bold text-sm transition-all"
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download Free Config
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => navigate("/pricing")}
+                        className="w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm"
+                      >
+                        <Zap className="w-4 h-4 mr-2" />
+                        View Premium Plans <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -299,7 +327,23 @@ export default function Dashboard() {
             ))}
           </div>
         )}
-      </div>
+
+        {/* Free Config Download Modal */}
+        {selectedFreeConfig && (
+          <FreeConfigDownloadModal
+            isOpen={!!selectedFreeConfig}
+            onClose={() => setSelectedFreeConfig(null)}
+            server={{
+              id: selectedFreeConfig.id,
+              serverName: selectedFreeConfig.serverName,
+              network: selectedFreeConfig.network,
+              appType: selectedFreeConfig.appType,
+              duration: selectedFreeConfig.duration,
+              originalName: selectedFreeConfig.originalName,
+            }}
+          />
+        )}
+      </main>
     </div>
   );
 }

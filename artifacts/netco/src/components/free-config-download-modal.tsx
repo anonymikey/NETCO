@@ -109,7 +109,7 @@ export function FreeConfigDownloadModal({ isOpen, onClose, server }: FreeConfigD
       <div className="glass-card rounded-xl max-w-md w-full p-6 space-y-6 border border-border">
         {/* Header */}
         <div className="flex items-start justify-between">
-          <div className="space-y-1">
+          <div className="space-y-1 flex-1">
             <h2 className="text-xl font-bold">Get Free Config</h2>
             <p className="text-sm text-muted-foreground">{server.serverName}</p>
           </div>
@@ -119,6 +119,26 @@ export function FreeConfigDownloadModal({ isOpen, onClose, server }: FreeConfigD
           >
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* App Info Banner */}
+        <div className="bg-secondary/10 border border-secondary/30 rounded-lg p-4 space-y-2">
+          <p className="text-sm font-medium text-foreground">Required App</p>
+          <p className="text-sm text-muted-foreground">
+            This config file is for <span className="font-bold text-secondary">{server.appType === "http_custom" ? "HTTP Custom" : "HTTP Injector"}</span>
+          </p>
+          <a
+            href={
+              server.appType === "http_custom"
+                ? "https://play.google.com/store/apps/details?id=xyz.easypro.httpcustom&pcampaignid=web_share"
+                : "https://play.google.com/store/apps/details?id=com.evozi.injector&pcampaignid=web_share"
+            }
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-primary hover:underline inline-block mt-1"
+          >
+            Download {server.appType === "http_custom" ? "HTTP Custom" : "HTTP Injector"} from Play Store →
+          </a>
         </div>
 
         {/* Form */}
@@ -198,15 +218,22 @@ export function FreeConfigDownloadModal({ isOpen, onClose, server }: FreeConfigD
 
         {/* Success */}
         {state === "success" && (
-          <div className="py-8 space-y-4 text-center">
-            <div className="inline-flex p-3 rounded-full bg-success/10">
-              <CheckCircle className="w-8 h-8 text-success" />
-            </div>
-            <div className="space-y-2">
+          <div className="py-6 space-y-4">
+            <div className="text-center space-y-2">
+              <div className="inline-flex p-3 rounded-full bg-success/10">
+                <CheckCircle className="w-8 h-8 text-success" />
+              </div>
               <h3 className="font-bold text-foreground">Download Complete!</h3>
-              <p className="text-sm text-muted-foreground">
-                Your config has been downloaded. Import it into your app to get started.
-              </p>
+            </div>
+            
+            <div className="bg-primary/10 border border-primary/30 rounded-lg p-4 space-y-3">
+              <p className="text-sm font-medium text-foreground">Next Steps:</p>
+              <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                <li>Open <span className="font-mono text-xs bg-card px-1 py-0.5 rounded">{server.appType === "http_custom" ? "HTTP Custom" : "HTTP Injector"}</span></li>
+                <li>Go to app settings or import section</li>
+                <li>Select the downloaded {server.originalName}</li>
+                <li>Connect and enjoy!</li>
+              </ol>
             </div>
           </div>
         )}
