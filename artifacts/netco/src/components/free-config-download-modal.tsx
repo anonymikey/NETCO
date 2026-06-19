@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { X, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { X, Loader2, CheckCircle, AlertCircle, Smartphone, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiUrl } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
@@ -22,12 +22,30 @@ interface FreeConfigDownloadModalProps {
 
 type State = "form" | "downloading" | "success" | "error";
 
+const APP_INFO: Record<string, { name: string; ext: string; playStoreUrl: string }> = {
+  http_custom: {
+    name: "HTTP Custom",
+    ext: ".hc",
+    playStoreUrl: "https://play.google.com/store/apps/details?id=xyz.easypro.httpcustom&pcampaignid=web_share",
+  },
+  http_injector: {
+    name: "HTTP Injector",
+    ext: ".ehi",
+    playStoreUrl: "https://play.google.com/store/apps/details?id=com.evozi.injector&pcampaignid=web_share",
+  },
+};
+
+function getAppInfo(appType: string) {
+  return APP_INFO[appType] ?? APP_INFO.http_custom;
+}
+
 export function FreeConfigDownloadModal({ isOpen, onClose, server }: FreeConfigDownloadModalProps) {
   const { toast } = useToast();
   const [deviceId, setDeviceId] = useState("");
   const [phone, setPhone] = useState("");
   const [state, setState] = useState<State>("form");
   const [error, setError] = useState("");
+  const appInfo = getAppInfo(server.appType);
 
   const handleDownload = async () => {
     if (!deviceId.trim()) {
@@ -88,13 +106,8 @@ export function FreeConfigDownloadModal({ isOpen, onClose, server }: FreeConfigD
         setState("success");
         toast({
           title: "Config downloaded!",
-          description: `Your ${server.originalName} has been downloaded. Import it into your app.`,
+          description: `Your ${server.originalName} has been downloaded. Open it with ${appInfo.name}.`,
         });
-
-        setTimeout(() => {
-          onClose();
-          setState("form");
-        }, 2000);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Download failed");
@@ -124,6 +137,21 @@ export function FreeConfigDownloadModal({ isOpen, onClose, server }: FreeConfigD
         {/* Form */}
         {state === "form" && (
           <div className="space-y-4">
+            {/* Required App Banner */}
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <div className="inline-flex p-2 rounded-lg bg-primary/10 flex-shrink-0">
+                <Smartphone className="w-4 h-4 text-primary" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-foreground">
+                  Requires <span className="text-primary">{appInfo.name}</span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  This is a {appInfo.ext} config. Open it with {appInfo.name} to connect.
+                </p>
+              </div>
+            </div>
+
             {/* Device ID */}
             <div className="space-y-2">
               <Label htmlFor="device-id">Device ID / HWID</Label>
@@ -198,16 +226,41 @@ export function FreeConfigDownloadModal({ isOpen, onClose, server }: FreeConfigD
 
         {/* Success */}
         {state === "success" && (
-          <div className="py-8 space-y-4 text-center">
+          <div className="py-6 space-y-5 text-center">
             <div className="inline-flex p-3 rounded-full bg-success/10">
               <CheckCircle className="w-8 h-8 text-success" />
             </div>
             <div className="space-y-2">
               <h3 className="font-bold text-foreground">Download Complete!</h3>
               <p className="text-sm text-muted-foreground">
-                Your config has been downloaded. Import it into your app to get started.
+                Your {appInfo.ext} config is saved. Now open it with{" "}
+                <span className="font-medium text-foreground">{appInfo.name}</span> to connect.
               </p>
             </div>
+
+            {/* Next step: get the correct app */}
+            <div className="text-left rounded-lg bg-primary/5 border border-primary/20 p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Smartphone className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">Don&apos;t have {appInfo.name}?</span>
+              </div>
+              <a href={appInfo.playStoreUrl} target="_blank" rel="noopener noreferrer" className="block">
+                <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                  Get {appInfo.name} <ExternalLink className="w-4 h-4 ml-2" />
+                </Button>
+              </a>
+            </div>
+
+            <Button
+              onClick={() => {
+                onClose();
+                setState("form");
+              }}
+              variant="outline"
+              className="w-full"
+            >
+              Done
+            </Button>
           </div>
         )}
 
