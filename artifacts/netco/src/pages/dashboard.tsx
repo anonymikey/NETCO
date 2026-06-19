@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { useListPlans, getListPlansQueryKey } from "@workspace/api-client-react";
-import { Search, Download, Clock, CheckCircle, XCircle, Smartphone, Wifi, RefreshCw, AlertCircle } from "lucide-react";
+import { useListPlans, getListPlansQueryKey, useListConfigServers } from "@workspace/api-client-react";
+import { Search, Download, Clock, CheckCircle, XCircle, Smartphone, Wifi, RefreshCw, AlertCircle, Gift, Server, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { initServerStatusUpdates, subscribeToServerStatus, stopServerStatusUpdates } from "@/lib/server-status-realtime";
 import { AppShowcase } from "@/components/app-showcase";
@@ -24,6 +24,7 @@ function formatTimeLeft(expiryDate: string) {
 
 export default function Dashboard() {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [phone, setPhone] = useState("");
   const [deviceId, setDeviceId] = useState("");
   const [searchParams, setSearchParams] = useState<{ phone?: string; deviceId?: string } | null>(null);
@@ -44,6 +45,8 @@ export default function Dashboard() {
     searchParams ?? {},
     { query: { enabled: !!searchParams, queryKey: getListPlansQueryKey(searchParams ?? {}) } }
   );
+
+  const { data: availableServers = [] } = useListConfigServers();
 
   const handleSearch = () => {
     if (!phone.trim() && !deviceId.trim()) {
@@ -67,6 +70,19 @@ export default function Dashboard() {
       default: return "text-primary";
     }
   };
+
+  const networkColor = (network: string) => {
+    switch (network.toLowerCase()) {
+      case "safaricom": return "border-green-400/30 bg-green-400/5 text-green-400";
+      case "airtel": return "border-red-400/30 bg-red-400/5 text-red-400";
+      case "telkom": return "border-blue-400/30 bg-blue-400/5 text-blue-400";
+      default: return "border-primary/30 bg-primary/5 text-primary";
+    }
+  };
+
+  const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+
+  const activeServers = availableServers.filter((s: any) => s.status === "active") ?? [];
 
   return (
     <div className="min-h-screen pt-24 pb-20 px-4">
@@ -215,8 +231,60 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Available Configs Section */}
+        {activeServers.length > 0 && (
+          <div className="space-y-6 pt-8 border-t border-border">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Server className="w-5 h-5 text-primary" />
+                <h2 className="font-heading font-bold text-2xl">Available Configurations</h2>
+              </div>
+              <p className="text-muted-foreground">Browse and purchase new configs from our collection of free and premium options.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {activeServers.map((server: any) => (
+                <div
+                  key={server.id}
+                  className="group glass-card rounded-xl p-5 border border-border hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/20 space-y-4"
+                >
+                  {server.isFree && (
+                    <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 text-xs font-bold">
+                      <Gift className="w-3 h-3" /> FREE
+                    </div>
+                  )}
+
+                  <div>
+                    <h3 className="font-bold text-foreground">{server.serverName}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">{server.originalName}</p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium border ${networkColor(server.network)}`}>
+                      {capitalize(server.network)}
+                    </span>
+                    <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium border border-primary/30 bg-primary/5 text-primary">
+                      {capitalize(server.planType)}
+                    </span>
+                    <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium border border-secondary/30 bg-secondary/5 text-secondary">
+                      {capitalize(server.duration)}
+                    </span>
+                  </div>
+
+                  <Button
+                    onClick={() => navigate("/pricing")}
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm"
+                  >
+                    View Plans <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {!searchParams && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
             {[
               { icon: Search, label: "Check Expiry", href: "/check-expiry", color: "text-primary", bg: "bg-primary/5 border-primary/20" },
               { icon: Smartphone, label: "How to Connect", href: "/how-to-connect", color: "text-secondary", bg: "bg-secondary/5 border-secondary/20" },
