@@ -78,28 +78,31 @@ async function autoFulfillOrder(orderId: string, logger: MinimalLogger) {
     const configUrl = `/api/orders/${orderId}/download`;
     const ext = path.extname(server.originalName).toLowerCase();
 
-    await db.update(ordersTable)
-      .set({ status: "completed", configUrl })
-      .where(eq(ordersTable.id, orderId));
+    await db.transaction(async (tx) => {
+      await tx.update(ordersTable)
+        .set({ status: "completed", configUrl })
+        .where(eq(ordersTable.id, orderId));
 
-    const existing = await db.select().from(userPlansTable).where(eq(userPlansTable.orderId, orderId)).limit(1);
-    if (existing.length === 0) {
-      await db.insert(userPlansTable).values({
-        id: randomUUID(),
-        orderId,
-        network: order.network,
-        planName: server.serverName,
-        planType: server.planType,
-        duration: order.duration,
-        appType: order.appType,
-        deviceId: order.deviceId,
-        phone: order.phone,
-        expiryDate: expiryFromDuration(order.duration),
-        status: "active",
-        configUrl,
-        fileExtension: ext,
-      });
-    }
+      const existing = await tx.select().from(userPlansTable).where(eq(userPlansTable.orderId, orderId)).limit(1);
+      if (existing.length === 0) {
+        await tx.insert(userPlansTable).values({
+          id: randomUUID(),
+          userId: order.userId,
+          orderId,
+          network: order.network,
+          planName: server.serverName,
+          planType: server.planType,
+          duration: order.duration,
+          appType: order.appType,
+          deviceId: order.deviceId,
+          phone: order.phone,
+          expiryDate: expiryFromDuration(order.duration),
+          status: "active",
+          configUrl,
+          fileExtension: ext,
+        });
+      }
+    });
 
     logger.info?.(`Auto-fulfilled order ${orderId} with config ${server.serverName}`);
   } catch (err) {
