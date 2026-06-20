@@ -5,7 +5,7 @@ import { userProfilesTable } from "./user_profiles";
 
 export const userPlansTable = pgTable("user_plans", {
   id: text("id").primaryKey(),
-  userId: text("user_id").references(() => userProfilesTable.id),
+  userId: text("user_id").notNull().references(() => userProfilesTable.id),
   orderId: text("order_id").notNull(),
   network: text("network").notNull(),
   planName: text("plan_name").notNull(),
