@@ -100,28 +100,31 @@ router.post("/orders/:id/fulfill", async (req, res) => {
     const configUrl = `/api/orders/${order.id}/download`;
     const ext = path.extname(server.originalName).toLowerCase();
 
-    await db.update(ordersTable)
-      .set({ status: "completed", configUrl })
-      .where(eq(ordersTable.id, order.id));
+    await db.transaction(async (tx) => {
+      await tx.update(ordersTable)
+        .set({ status: "completed", configUrl })
+        .where(eq(ordersTable.id, order.id));
 
-    const existingPlan = await db.select().from(userPlansTable).where(eq(userPlansTable.orderId, order.id)).limit(1);
-    if (existingPlan.length === 0) {
-      await db.insert(userPlansTable).values({
-        id: randomUUID(),
-        orderId: order.id,
-        network: order.network,
-        planName: server.serverName,
-        planType: server.planType,
-        duration: order.duration,
-        appType: order.appType,
-        deviceId: order.deviceId,
-        phone: order.phone,
-        expiryDate: expiryFromDuration(order.duration),
-        status: "active",
-        configUrl,
-        fileExtension: ext,
-      });
-    }
+      const existingPlan = await tx.select().from(userPlansTable).where(eq(userPlansTable.orderId, order.id)).limit(1);
+      if (existingPlan.length === 0) {
+        await tx.insert(userPlansTable).values({
+          id: randomUUID(),
+          userId: order.userId,
+          orderId: order.id,
+          network: order.network,
+          planName: server.serverName,
+          planType: server.planType,
+          duration: order.duration,
+          appType: order.appType,
+          deviceId: order.deviceId,
+          phone: order.phone,
+          expiryDate: expiryFromDuration(order.duration),
+          status: "active",
+          configUrl,
+          fileExtension: ext,
+        });
+      }
+    });
 
     req.log.info({ orderId: order.id, configServerId: server.id }, "Order fulfilled by admin");
     res.json({ success: true, configUrl });

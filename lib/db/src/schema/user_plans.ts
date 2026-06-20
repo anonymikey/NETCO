@@ -1,9 +1,11 @@
 import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { userProfilesTable } from "./user_profiles";
 
 export const userPlansTable = pgTable("user_plans", {
   id: text("id").primaryKey(),
+  userId: text("user_id").references(() => userProfilesTable.id),
   orderId: text("order_id").notNull(),
   network: text("network").notNull(),
   planName: text("plan_name").notNull(),
