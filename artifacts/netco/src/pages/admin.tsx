@@ -133,6 +133,7 @@ export default function Admin() {
   const [newOrderCount, setNewOrderCount] = useState(0);
   const [fulfillOrderId, setFulfillOrderId] = useState<string | null>(null);
   const [fulfillServerId, setFulfillServerId] = useState("");
+  const [fulfillInstructions, setFulfillInstructions] = useState("");
   const [fulfilling, setFulfilling] = useState(false);
 
   const fetchOrders = useCallback(async () => {
@@ -185,16 +186,21 @@ export default function Admin() {
     if (!fulfillOrderId) return;
     setFulfilling(true);
     try {
+      const payload: any = {};
+      if (fulfillServerId) payload.configServerId = fulfillServerId;
+      if (fulfillInstructions.trim()) payload.instructions = fulfillInstructions.trim();
+      
       const res = await fetch(apiUrl(`/api/admin/orders/${fulfillOrderId}/fulfill`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(fulfillServerId ? { configServerId: fulfillServerId } : {}),
+        body: JSON.stringify(payload),
       });
       const data = await res.json() as { success?: boolean; error?: string };
       if (!res.ok) throw new Error(data.error ?? "Fulfill failed");
       toast({ title: "Order fulfilled!", description: "Config file sent to client." });
       setFulfillOrderId(null);
       setFulfillServerId("");
+      setFulfillInstructions("");
       fetchOrders();
     } catch (err) {
       toast({ title: "Fulfill failed", description: (err as Error).message, variant: "destructive" });
@@ -654,23 +660,33 @@ export default function Admin() {
                     Select a config server to deliver, or leave blank to auto-match by network, app type, and duration.
                   </p>
 
-                  <div className="space-y-2">
-                    <Label>Config Server (optional)</Label>
-                    <select
-                      value={fulfillServerId}
-                      onChange={(e) => setFulfillServerId(e.target.value)}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                    >
-                      <option value="">— Auto-match by order details —</option>
-                      {(servers as Array<{ id: string; serverName: string; network: string; duration: string; status: string }>)
-                        .filter((s) => s.status === "active")
-                        .map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.serverName} ({capitalize(s.network)} · {capitalize(s.duration)})
-                          </option>
-                        ))}
-                    </select>
-                  </div>
+  <div className="space-y-2">
+  <Label>Config Server (optional)</Label>
+  <select
+  value={fulfillServerId}
+  onChange={(e) => setFulfillServerId(e.target.value)}
+  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+  >
+  <option value="">— Auto-match by order details —</option>
+  {(servers as Array<{ id: string; serverName: string; network: string; duration: string; status: string }>)
+  .filter((s) => s.status === "active")
+  .map((s) => (
+  <option key={s.id} value={s.id}>
+  {s.serverName} ({capitalize(s.network)} · {capitalize(s.duration)})
+  </option>
+  ))}
+  </select>
+  </div>
+
+  <div className="space-y-2">
+  <Label>Customer Instructions (optional)</Label>
+  <textarea
+  value={fulfillInstructions}
+  onChange={(e) => setFulfillInstructions(e.target.value)}
+  placeholder="This file will connect within a few seconds after importing.&#10;Do not edit payload settings.&#10;Allow VPN permission if requested."
+  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none h-24"
+  />
+  </div>
 
                   <div className="flex gap-3">
                     <Button

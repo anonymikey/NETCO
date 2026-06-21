@@ -45,7 +45,7 @@ export default function Dashboard() {
 
   const { data: plans, isLoading } = useListPlans(
     searchParams ?? {},
-    { query: { enabled: !!searchParams, queryKey: getListPlansQueryKey(searchParams ?? {}) } }
+    { query: { enabled: !!searchParams, queryKey: getListPlansQueryKey(searchParams ?? {}), refetchInterval: 10000 } }
   );
 
   const { data: availableServers = [] } = useListConfigServers();
@@ -191,6 +191,18 @@ export default function Dashboard() {
                         <Download className="w-4 h-4 mr-2" /> Download Config ({plan.fileExtension})
                       </Button>
                     </a>
+                    {/* Instructions card */}
+                    {plan.instructions && (
+                      <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 backdrop-blur-sm animate-in fade-in">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                            <p className="font-medium text-sm text-primary">Important Information</p>
+                            <p className="text-xs text-foreground/80 whitespace-pre-line">{plan.instructions}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     {/* Server availability status */}
                     {plan.serverId && serverStatus[plan.serverId] && (
                       <div className={`flex items-center gap-2 text-xs p-2 rounded-md ${serverStatus[plan.serverId].isFree ? "bg-success/10 text-success border border-success/20" : "bg-warning/10 text-warning border border-warning/20"}`}>

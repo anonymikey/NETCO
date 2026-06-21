@@ -100,6 +100,7 @@ async function autoFulfillOrder(orderId: string, logger: MinimalLogger) {
           status: "active",
           configUrl,
           fileExtension: ext,
+          deliveredAt: new Date(),
         });
       }
     });
