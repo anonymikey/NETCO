@@ -19,6 +19,8 @@ export const userPlansTable = pgTable("user_plans", {
   status: text("status").notNull().default("active"),
   configUrl: text("config_url"),
   fileExtension: text("file_extension"),
+  instructions: text("instructions"),
+  deliveredAt: timestamp("delivered_at", { withTimezone: true }).defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -55,7 +55,7 @@ router.get("/orders", async (req, res) => {
 router.post("/orders/:id/fulfill", async (req, res) => {
   try {
     const { id } = req.params;
-    const { configServerId } = req.body as { configServerId?: string };
+    const { configServerId, instructions } = req.body as { configServerId?: string; instructions?: string };
 
     const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
     if (!order) {
@@ -122,6 +122,8 @@ router.post("/orders/:id/fulfill", async (req, res) => {
           status: "active",
           configUrl,
           fileExtension: ext,
+          instructions: instructions || null,
+          deliveredAt: new Date(),
         });
       }
     });
