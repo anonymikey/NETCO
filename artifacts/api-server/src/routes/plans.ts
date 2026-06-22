@@ -47,6 +47,7 @@ router.get("/", async (req, res) => {
       configUrl: p.configUrl ?? null,
       fileExtension: p.fileExtension ?? null,
       speed: p.speed ?? null,
+      instructions: p.instructions ?? null,
     }));
 
     res.json(formatted);
