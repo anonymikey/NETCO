@@ -12,12 +12,12 @@ The config download flow will **fail when API and frontend are on different doma
 - API stores config URLs as relative paths: `/api/orders/123/download`
 - Frontend is on: `https://netco.app`
 - Browser tries to download from: `https://netco.app/api/orders/123/download` ❌
-- API is actually at: `https://api.netco.app/api/orders/123/download` ❌
+- API is actually at: `https://netco.onrender.com/api/orders/123/download` ❌
 - Result: **404 Download Fails**
 
 **After fix**:
-- API stores config URLs as absolute paths: `https://api.netco.app/api/orders/123/download`
-- Browser downloads from: `https://api.netco.app/api/orders/123/download` ✅
+- API stores config URLs as absolute paths: `https://netco.onrender.com/api/orders/123/download`
+- Browser downloads from: `https://netco.onrender.com/api/orders/123/download` ✅
 - Result: **Download Works**
 
 ---
@@ -36,12 +36,12 @@ The config download flow will **fail when API and frontend are on different doma
 
 Add to API server:
 ```env
-API_BASE_URL=https://api.netco.app
+API_BASE_URL=https://netco.onrender.com
 ```
 
 Add to frontend:
 ```env
-VITE_API_BASE_URL=https://api.netco.app
+VITE_API_BASE_URL=https://netco.onrender.com
 ```
 
 ### 3️⃣ Download Endpoint
@@ -122,7 +122,7 @@ VITE_API_BASE_URL=https://api.netco.app
 ### Current Architecture
 ```
 Frontend: https://netco.app
-API: https://api.netco.app ← Different domain!
+API: https://netco.onrender.com ← Different domain!
 ```
 
 When API and frontend are on **different domains**:
@@ -143,7 +143,7 @@ When API and frontend are on **different domains**:
 ```json
 {
   "id": "order-123",
-  "configUrl": "https://api.netco.app/api/orders/order-123/download",
+  "configUrl": "https://netco.onrender.com/api/orders/order-123/download",
   "status": "completed"
 }
 ```
@@ -197,7 +197,7 @@ After deployment, verify:
 
 ```
 □ Create new free order → get configUrl back
-  Expected: "https://api.netco.app/api/orders/abc123/download"
+  Expected: "https://netco.onrender.com/api/orders/abc123/download"
   Not: "/api/orders/abc123/download"
 
 □ Create paid order via payment flow → auto-fulfill
@@ -264,14 +264,14 @@ After deployment, verify:
 
 5. **Set environment variables**
    
-   For **API Server** (Render/Railway dashboard):
+   For **API Server** (Render dashboard):
    ```
-   API_BASE_URL = https://api.netco.app
+   API_BASE_URL = https://netco.onrender.com
    ```
    
    For **Frontend** (Vercel Project Settings > Environment Variables):
    ```
-   VITE_API_BASE_URL = https://api.netco.app
+   VITE_API_BASE_URL = https://netco.onrender.com
    ```
 
 6. **Merge and deploy API first**

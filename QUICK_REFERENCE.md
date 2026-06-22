@@ -51,13 +51,13 @@
 
 ### For API Server
 ```env
-API_BASE_URL=https://api.netco.app
+API_BASE_URL=https://netco.onrender.com
 ```
-Set in: Render, Railway, or your deployment platform
+Set in: Render Environment tab
 
 ### For Frontend  
 ```env
-VITE_API_BASE_URL=https://api.netco.app
+VITE_API_BASE_URL=https://netco.onrender.com
 ```
 Set in: Vercel Project Settings
 
@@ -201,17 +201,17 @@ After fix is deployed:
 ```
 BEFORE (BROKEN):
 Frontend: netco.app
-API: api.netco.app
+API: netco.onrender.com
 User clicks download
 Browser: netco.app/api/orders/123/download ❌ (wrong domain!)
-API: api.netco.app/api/orders/123/download (not reached)
+API: netco.onrender.com/api/orders/123/download (not reached)
 Result: 404
 
 AFTER (FIXED):
 Frontend: netco.app
-API: api.netco.app
+API: netco.onrender.com
 User clicks download
-Browser: api.netco.app/api/orders/123/download ✅ (correct domain!)
+Browser: netco.onrender.com/api/orders/123/download ✅ (correct domain!)
 API: Returns .hc file ✅
 Result: Download works!
 ```
@@ -253,14 +253,14 @@ No old orders are broken.
 
 ```bash
 # Check API is responding
-curl https://api.netco.app/api/orders/health
+curl https://netco.onrender.com/api/orders/health
 
 # Check config file exists
 # (after order created)
-curl -I https://api.netco.app/api/orders/abc123/download
+curl -I https://netco.onrender.com/api/orders/abc123/download
 
 # Check headers
-curl -I https://api.netco.app/api/orders/abc123/download | grep Content-
+curl -I https://netco.onrender.com/api/orders/abc123/download | grep Content-
 
 # Check database
 psql -c "SELECT id, configUrl FROM orders LIMIT 1;"
