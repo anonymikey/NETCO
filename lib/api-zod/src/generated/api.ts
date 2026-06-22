@@ -158,7 +158,8 @@ export const ListPlansResponseItem = zod.object({
   "status": zod.enum(['active', 'expired']),
   "configUrl": zod.string().nullish(),
   "fileExtension": zod.string().nullish(),
-  "speed": zod.string().nullish()
+  "speed": zod.string().nullish(),
+  "instructions": zod.string().nullish()
 })
 export const ListPlansResponse = zod.array(ListPlansResponseItem)
 
