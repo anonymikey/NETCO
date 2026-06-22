@@ -2,6 +2,7 @@ import { pgTable, text, timestamp, numeric, boolean } from "drizzle-orm/pg-core"
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { userProfilesTable } from "./user_profiles";
+import { configServersTable } from "./config_servers";
 
 export const ordersTable = pgTable("orders", {
   id: text("id").primaryKey(),
@@ -16,6 +17,7 @@ export const ordersTable = pgTable("orders", {
   status: text("status").notNull().default("pending"),
   paymentReference: text("payment_reference"),
   configUrl: text("config_url"),
+  configServerId: text("config_server_id").references(() => configServersTable.id),
   orderConfirmationSent: boolean("order_confirmation_sent").notNull().default(false),
   orderConfirmationSentAt: timestamp("order_confirmation_sent_at"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
