@@ -103,7 +103,7 @@ router.post("/orders/:id/fulfill", async (req, res) => {
 
     await db.transaction(async (tx) => {
       await tx.update(ordersTable)
-        .set({ status: "completed", configUrl })
+        .set({ status: "completed", configUrl, configServerId: server.id })
         .where(eq(ordersTable.id, order.id));
 
       const existingPlan = await tx.select().from(userPlansTable).where(eq(userPlansTable.orderId, order.id)).limit(1);

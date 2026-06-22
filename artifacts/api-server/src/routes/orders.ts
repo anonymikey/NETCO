@@ -174,18 +174,32 @@ router.get("/:id/download", async (req, res) => {
     return;
   }
 
-  const [server] = await db
-    .select()
-    .from(configServersTable)
-    .where(
-      and(
-        eq(configServersTable.network, order.network),
-        eq(configServersTable.appType, order.appType),
-        eq(configServersTable.duration, order.duration),
-        eq(configServersTable.status, "active")
+  // Try to get server by configServerId (new flow for fulfilled orders)
+  let [server] = order.configServerId 
+    ? await db
+        .select()
+        .from(configServersTable)
+        .where(eq(configServersTable.id, order.configServerId))
+        .limit(1)
+    : [null];
+
+  // Fallback to matching by order attributes (legacy free configs)
+  if (!server) {
+    const [legacyServer] = await db
+      .select()
+      .from(configServersTable)
+      .where(
+        and(
+          eq(configServersTable.network, order.network),
+          eq(configServersTable.appType, order.appType),
+          eq(configServersTable.duration, order.duration),
+          eq(configServersTable.status, "active"),
+          eq(configServersTable.isFree, true)
+        )
       )
-    )
-    .limit(1);
+      .limit(1);
+    server = legacyServer;
+  }
 
   if (!server) {
     res.status(404).json({ error: "Config server not found for this order" });
