@@ -4,6 +4,7 @@ import path from "path";
 import { db, ordersTable, configServersTable, userPlansTable } from "@workspace/db";
 import { eq, desc, like, or, and } from "drizzle-orm";
 import { downloadConfigFile } from "../lib/storage";
+import { createNotification } from "../lib/notifications";
 
 const router = Router();
 const API_BASE_URL = process.env.API_BASE_URL?.replace(/\/+$/, "") || "http://localhost:3001";
@@ -128,6 +129,14 @@ router.post("/orders/:id/fulfill", async (req, res) => {
         });
       }
     });
+
+    // Send notification
+    await createNotification(
+      order.userId,
+      "Config Ready",
+      `Your ${order.appType === "http_custom" ? "HTTP Custom" : "HTTP Injector"} config for ${order.network} is ready to download!`,
+      "plan"
+    );
 
     req.log.info({ orderId: order.id, configServerId: server.id }, "Order fulfilled by admin");
     res.json({ success: true, configUrl });

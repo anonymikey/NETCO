@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import "@/lib/api";
 
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { NotificationsProvider } from "@/context/notifications-context";
 import { Layout } from "@/components/layout";
 import Home from "@/pages/home";
 import Pricing from "@/pages/pricing";
@@ -90,12 +91,14 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Layout>
-              <Router />
-            </Layout>
-          </WouterRouter>
-          <Toaster />
+          <NotificationsProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Layout>
+                <Router />
+              </Layout>
+            </WouterRouter>
+            <Toaster />
+          </NotificationsProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

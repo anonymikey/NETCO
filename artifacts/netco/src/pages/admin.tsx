@@ -24,9 +24,10 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { apiUrl } from "@/lib/api";
+import { AdminNotificationsPanel } from "@/components/admin-notifications-panel";
 
 const NETWORK_COLORS = ["#00F5FF", "#7B61FF", "#0057A8"];
-const TABS = ["Dashboard", "Orders", "Config Servers"] as const;
+const TABS = ["Dashboard", "Orders", "Config Servers", "Notifications"] as const;
 type Tab = typeof TABS[number];
 
 const NETWORKS = ["safaricom", "airtel", "telkom"] as const;
@@ -704,6 +705,17 @@ export default function Admin() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ─────────── NOTIFICATIONS TAB ─────────── */}
+        {activeTab === "Notifications" && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-heading font-bold">Notifications</h2>
+              <p className="text-muted-foreground text-sm mt-1">Send notifications to users</p>
+            </div>
+            <AdminNotificationsPanel />
           </div>
         )}
 

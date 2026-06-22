@@ -6,6 +6,7 @@ import { InitiatePaymentBody } from "@workspace/api-zod";
 import path from "path";
 import { downloadConfigFile } from "../lib/storage";
 import { sendOrderConfirmationEmail } from "../lib/email.js";
+import { createNotification } from "../lib/notifications";
 
 const router = Router();
 
@@ -81,7 +82,7 @@ async function autoFulfillOrder(orderId: string, logger: MinimalLogger) {
 
     await db.transaction(async (tx) => {
       await tx.update(ordersTable)
-        .set({ status: "completed", configUrl })
+        .set({ status: "completed", configUrl, configServerId: server.id })
         .where(eq(ordersTable.id, orderId));
 
       const existing = await tx.select().from(userPlansTable).where(eq(userPlansTable.orderId, orderId)).limit(1);
@@ -105,6 +106,14 @@ async function autoFulfillOrder(orderId: string, logger: MinimalLogger) {
         });
       }
     });
+
+    // Send notification
+    await createNotification(
+      order.userId,
+      "Config Ready",
+      `Your ${order.appType === "http_custom" ? "HTTP Custom" : "HTTP Injector"} config for ${order.network} is ready to download!`,
+      "payment"
+    );
 
     logger.info?.(`Auto-fulfilled order ${orderId} with config ${server.serverName}`);
   } catch (err) {
