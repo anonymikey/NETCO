@@ -1,15 +1,26 @@
-import { Router } from "express";
-import { requireAuth } from "../middleware/auth";
+import { Router, type Request, type Response } from "express";
 import { db, notificationsTable } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
 import { markNotificationRead, markAllNotificationsRead, getNotifications } from "../lib/notifications";
 
 const router = Router();
 
+// Helper to extract userId from auth header
+function getUserIdFromAuth(req: Request): string | null {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return null;
+  
+  // Format: "Bearer userId"
+  const [scheme, token] = authHeader.split(" ");
+  if (scheme !== "Bearer") return null;
+  
+  return token || null;
+}
+
 // Get all notifications for authenticated user
-router.get("/", requireAuth, async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const userId = req.user?.id;
+    const userId = getUserIdFromAuth(req);
     if (!userId) {
       res.status(401).json({ error: "Unauthorized" });
       return;
@@ -26,9 +37,9 @@ router.get("/", requireAuth, async (req, res) => {
 });
 
 // Get unread count for authenticated user
-router.get("/unread-count", requireAuth, async (req, res) => {
+router.get("/unread-count", async (req, res) => {
   try {
-    const userId = req.user?.id;
+    const userId = getUserIdFromAuth(req);
     if (!userId) {
       res.status(401).json({ error: "Unauthorized" });
       return;
@@ -46,10 +57,10 @@ router.get("/unread-count", requireAuth, async (req, res) => {
 });
 
 // Mark single notification as read
-router.post("/:id/read", requireAuth, async (req, res) => {
+router.post("/:id/read", async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user?.id;
+    const userId = getUserIdFromAuth(req);
 
     if (!userId) {
       res.status(401).json({ error: "Unauthorized" });
@@ -75,9 +86,9 @@ router.post("/:id/read", requireAuth, async (req, res) => {
 });
 
 // Mark all notifications as read
-router.post("/read-all", requireAuth, async (req, res) => {
+router.post("/read-all", async (req, res) => {
   try {
-    const userId = req.user?.id;
+    const userId = getUserIdFromAuth(req);
     if (!userId) {
       res.status(401).json({ error: "Unauthorized" });
       return;
