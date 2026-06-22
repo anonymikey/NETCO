@@ -7,6 +7,7 @@ import path from "path";
 import { downloadConfigFile, getSupabaseAdmin } from "../lib/storage";
 
 const router = Router();
+const API_BASE_URL = process.env.API_BASE_URL?.replace(/\/+$/, "") || "http://localhost:3001";
 
 async function resolveUserIdFromRequest(req: Request): Promise<string | null> {
   const authHeader = req.headers.authorization;
@@ -117,7 +118,7 @@ router.post("/free", async (req, res) => {
     }
 
     const orderId = randomUUID();
-    const configUrl = `/api/orders/${orderId}/download`;
+    const configUrl = `${API_BASE_URL}/api/orders/${orderId}/download`;
     const ext = path.extname(freeServer.originalName).toLowerCase();
 
     const [order] = await db.insert(ordersTable).values({

@@ -19,6 +19,7 @@ const PAYFLOW_BASE = "https://payflow.top/api/v2";
 const PAYFLOW_API_KEY = process.env.PAYFLOW_API_KEY ?? "";
 const PAYFLOW_API_SECRET = process.env.PAYFLOW_API_SECRET ?? "";
 const PAYFLOW_ACCOUNT_ID = Number(process.env.PAYFLOW_ACCOUNT_ID ?? "0");
+const API_BASE_URL = process.env.API_BASE_URL?.replace(/\/+$/, "") || "http://localhost:3001";
 
 function payflowHeaders() {
   return {
@@ -75,7 +76,7 @@ async function autoFulfillOrder(orderId: string, logger: MinimalLogger) {
       return;
     }
 
-    const configUrl = `/api/orders/${orderId}/download`;
+    const configUrl = `${API_BASE_URL}/api/orders/${orderId}/download`;
     const ext = path.extname(server.originalName).toLowerCase();
 
     await db.transaction(async (tx) => {

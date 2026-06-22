@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useListPlans, getListPlansQueryKey, useListConfigServers } from "@workspace/api-client-react";
 import { Search, Download, Clock, CheckCircle, XCircle, Smartphone, Wifi, RefreshCw, AlertCircle, Gift, Server, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { apiUrl } from "@/lib/api";
 import { initServerStatusUpdates, subscribeToServerStatus, stopServerStatusUpdates } from "@/lib/server-status-realtime";
 import { AppShowcase } from "@/components/app-showcase";
 import { FreeConfigDownloadModal } from "@/components/free-config-download-modal";
@@ -186,7 +187,7 @@ export default function Dashboard() {
                 </div>
                 {plan.configUrl && (
                   <div className="space-y-2">
-                    <a href={plan.configUrl} download data-testid={`button-download-${plan.id}`}>
+                    <a href={apiUrl(plan.configUrl)} download data-testid={`button-download-${plan.id}`}>
                       <Button size="sm" className="bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 w-full">
                         <Download className="w-4 h-4 mr-2" /> Download Config ({plan.fileExtension})
                       </Button>

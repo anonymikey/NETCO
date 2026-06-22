@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCheckPaymentStatus, getCheckPaymentStatusQueryKey } from "@workspace/api-client-react";
 import { CheckCircle, XCircle, Clock, Loader2, Download, Shield, Search, RefreshCw } from "lucide-react";
+import { apiUrl } from "@/lib/api";
 
 type TrackingState = "idle" | "polling" | "completed" | "failed" | "timeout";
 
@@ -206,7 +207,7 @@ export default function OrderStatus() {
 
               <div className="flex flex-col gap-3 w-full">
                 {configUrl ? (
-                  <a href={configUrl} download className="w-full">
+                  <a href={apiUrl(configUrl)} download className="w-full">
                     <Button className="w-full bg-green-500 hover:bg-green-600 text-white h-11">
                       <Download className="w-4 h-4 mr-2" /> Download Config File
                     </Button>
