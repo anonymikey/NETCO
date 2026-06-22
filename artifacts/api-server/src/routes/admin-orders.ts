@@ -6,6 +6,7 @@ import { eq, desc, like, or, and } from "drizzle-orm";
 import { downloadConfigFile } from "../lib/storage";
 
 const router = Router();
+const API_BASE_URL = process.env.API_BASE_URL?.replace(/\/+$/, "") || "http://localhost:3001";
 
 function expiryFromDuration(duration: string): Date {
   const now = new Date();
@@ -97,7 +98,7 @@ router.post("/orders/:id/fulfill", async (req, res) => {
       return;
     }
 
-    const configUrl = `/api/orders/${order.id}/download`;
+    const configUrl = `${API_BASE_URL}/api/orders/${order.id}/download`;
     const ext = path.extname(server.originalName).toLowerCase();
 
     await db.transaction(async (tx) => {
