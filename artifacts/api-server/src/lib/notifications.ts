@@ -1,5 +1,5 @@
 import { db, notificationsTable, userProfilesTable } from "@workspace/db";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, desc, and } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export type NotificationType = "info" | "success" | "warning" | "error" | "order" | "payment" | "plan";
@@ -105,7 +105,7 @@ export async function getNotifications(
     .select()
     .from(notificationsTable)
     .where(eq(notificationsTable.userId, userId))
-    .orderBy((t) => t.createdAt)
+    .orderBy(desc(notificationsTable.createdAt))
     .limit(limit)
     .offset(offset);
 
@@ -114,8 +114,9 @@ export async function getNotifications(
 
 export async function getUnreadCount(userId: string) {
   const result = await db
-    .select({ count: db.select({ id: notificationsTable.id }).from(notificationsTable).where(eq(notificationsTable.userId, userId)).where(eq(notificationsTable.isRead, false)) })
-    .from(notificationsTable);
+    .select({ count: db.fn.count(notificationsTable.id).mapWith(Number) })
+    .from(notificationsTable)
+    .where(and(eq(notificationsTable.userId, userId), eq(notificationsTable.isRead, false)));
 
-  return result.length || 0;
+  return result[0]?.count || 0;
 }

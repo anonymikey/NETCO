@@ -2,6 +2,7 @@ import { useEffect, useContext } from "react";
 import { NotificationsContext } from "@/context/notifications-context";
 import { apiUrl } from "@/lib/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 
 interface NotificationsAPI {
   getNotifications: (limit?: number, offset?: number) => Promise<any[]>;
@@ -10,26 +11,40 @@ interface NotificationsAPI {
   markAllRead: () => Promise<void>;
 }
 
+async function getAuthHeader() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user?.id) return {};
+  return {
+    Authorization: `Bearer ${session.user.id}`,
+  };
+}
+
 const notificationsAPI: NotificationsAPI = {
   getNotifications: async (limit = 20, offset = 0) => {
-    const response = await fetch(apiUrl(`/notifications?limit=${limit}&offset=${offset}`));
+    const headers = await getAuthHeader();
+    const response = await fetch(apiUrl(`/notifications?limit=${limit}&offset=${offset}`), { headers });
     if (!response.ok) throw new Error("Failed to fetch notifications");
     return response.json();
   },
   getUnreadCount: async () => {
-    const response = await fetch(apiUrl("/notifications/unread-count"));
+    const headers = await getAuthHeader();
+    const response = await fetch(apiUrl("/notifications/unread-count"), { headers });
     if (!response.ok) throw new Error("Failed to fetch unread count");
     return response.json();
   },
   markRead: async (notificationId: string) => {
+    const headers = await getAuthHeader();
     const response = await fetch(apiUrl(`/notifications/${notificationId}/read`), {
       method: "POST",
+      headers,
     });
     if (!response.ok) throw new Error("Failed to mark as read");
   },
   markAllRead: async () => {
+    const headers = await getAuthHeader();
     const response = await fetch(apiUrl("/notifications/read-all"), {
       method: "POST",
+      headers,
     });
     if (!response.ok) throw new Error("Failed to mark all as read");
   },

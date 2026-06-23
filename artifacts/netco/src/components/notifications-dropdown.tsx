@@ -29,16 +29,16 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
   return (
     <div
       data-notification-dropdown
-      className="absolute right-0 top-12 w-96 max-w-[calc(100vw-16px)] bg-white border border-gray-200 rounded-lg shadow-lg z-50 flex flex-col max-h-[600px]"
+      className="absolute right-0 top-12 w-96 max-w-[calc(100vw-16px)] bg-card border border-border rounded-lg shadow-lg z-50 flex flex-col max-h-[600px]"
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
-        <h2 className="font-semibold text-gray-900">Notifications</h2>
+      <div className="flex items-center justify-between p-4 border-b border-border">
+        <h2 className="font-semibold text-foreground">Notifications</h2>
         {unreadCount > 0 && (
           <Button
             variant="ghost"
             size="sm"
-            className="h-auto p-0 text-xs text-blue-600 hover:text-blue-700 hover:bg-transparent"
+            className="h-auto p-0 text-xs text-cyan-400 hover:text-cyan-300 hover:bg-transparent"
             onClick={() => markAllRead()}
           >
             <CheckCheck className="w-4 h-4 mr-1" />
@@ -50,11 +50,11 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
       {/* Content */}
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
         </div>
       ) : notifications.length === 0 ? (
         <div className="flex items-center justify-center py-12">
-          <p className="text-sm text-gray-500">No notifications yet</p>
+          <p className="text-sm text-muted-foreground">No notifications yet</p>
         </div>
       ) : (
         <ScrollArea className="flex-1">
