@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { X, Loader2, CheckCircle, AlertCircle, Smartphone, ExternalLink } from "lucide-react";
+import { validateCredential } from "@/lib/credential-validation";
 import { useToast } from "@/hooks/use-toast";
 import { apiUrl } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
@@ -49,9 +50,17 @@ export function FreeConfigDownloadModal({ isOpen, onClose, server }: FreeConfigD
 
   const handleDownload = async () => {
     if (!deviceId.trim()) {
-      setError("Device ID is required");
+      setError("Credential is required");
       return;
     }
+
+    // Validate credential format
+    const validation = validateCredential(deviceId.trim(), server.appType as "http_custom" | "http_injector");
+    if (!validation.isValid) {
+      setError(validation.error || "Invalid credential format");
+      return;
+    }
+
     if (!phone.trim()) {
       setError("Phone number is required");
       return;
@@ -154,10 +163,10 @@ export function FreeConfigDownloadModal({ isOpen, onClose, server }: FreeConfigD
 
             {/* Device ID */}
             <div className="space-y-2">
-              <Label htmlFor="device-id">Device ID / HWID</Label>
+              <Label htmlFor="device-id">{server.appType === "http_custom" ? "HWID" : "Device ID"}</Label>
               <Input
                 id="device-id"
-                placeholder="Paste your Device ID or HWID"
+                placeholder={`Paste your ${server.appType === "http_custom" ? "HWID" : "Device ID"}`}
                 value={deviceId}
                 onChange={(e) => {
                   setDeviceId(e.target.value);
@@ -167,8 +176,21 @@ export function FreeConfigDownloadModal({ isOpen, onClose, server }: FreeConfigD
                 disabled={state !== "form"}
               />
               <p className="text-xs text-muted-foreground">
-                Find your Device ID in the app settings or device info
+                Find your {server.appType === "http_custom" ? "HWID" : "Device ID"} in the app settings
               </p>
+              {deviceId && (() => {
+                const validation = validateCredential(deviceId.trim(), server.appType as "http_custom" | "http_injector");
+                return (
+                  <div className={`flex items-start gap-2 p-2 rounded text-xs ${
+                    validation.isValid
+                      ? "bg-green-500/10 border border-green-500/20 text-green-700"
+                      : "bg-destructive/10 border border-destructive/20 text-destructive"
+                  }`}>
+                    <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                    <span>{validation.isValid ? "Format is valid" : validation.error}</span>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Phone */}

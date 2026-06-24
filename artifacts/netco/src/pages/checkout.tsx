@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { CredentialsDisplay } from "@/components/credentials-display";
+import { validateCredential } from "@/lib/credential-validation";
 import {
   useCreateOrder,
   useInitiatePayment,
@@ -13,7 +14,7 @@ import {
   OrderInputDuration,
 } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Smartphone, CreditCard, Loader2, CheckCircle, XCircle, Clock, ChevronRight } from "lucide-react";
+import { Check, Smartphone, CreditCard, Loader2, CheckCircle, XCircle, Clock, ChevronRight, AlertCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -102,9 +103,21 @@ export default function Checkout() {
 
   const handleProceedToPhone = () => {
     if (!deviceId.trim()) {
-      toast({ title: "Device ID required", description: "Enter your Device ID or HWID to continue.", variant: "destructive" });
+      toast({ title: "Credential required", description: "Enter your Device ID or HWID to continue.", variant: "destructive" });
       return;
     }
+
+    // Validate credential format
+    const validation = validateCredential(deviceId.trim(), appType);
+    if (!validation.isValid) {
+      toast({
+        title: "Invalid credential format",
+        description: validation.error,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setStep(2);
   };
 
@@ -264,15 +277,28 @@ export default function Checkout() {
             <CredentialsDisplay appType={appType} />
 
             <div className="space-y-2">
-              <Label htmlFor="deviceId">Your {appType === "http_custom" ? "Device ID" : "HWID"}</Label>
+              <Label htmlFor="deviceId">Your {appType === "http_custom" ? "HWID" : "Device ID"}</Label>
               <Input
                 id="deviceId"
-                placeholder={`Paste your ${appType === "http_custom" ? "Device ID" : "HWID"} here`}
+                placeholder={`Paste your ${appType === "http_custom" ? "HWID" : "Device ID"} here`}
                 value={deviceId}
                 onChange={(e) => setDeviceId(e.target.value)}
                 className="bg-card border-border focus:border-primary h-12 font-mono text-sm"
                 data-testid="input-device-id"
               />
+              {deviceId && (() => {
+                const validation = validateCredential(deviceId.trim(), appType);
+                return (
+                  <div className={`flex items-start gap-2 p-3 rounded-lg text-sm ${
+                    validation.isValid
+                      ? "bg-green-500/10 border border-green-500/20 text-green-700"
+                      : "bg-destructive/10 border border-destructive/20 text-destructive"
+                  }`}>
+                    <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <span>{validation.isValid ? "Format is valid" : validation.error}</span>
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="flex gap-3">
