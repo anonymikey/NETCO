@@ -3,6 +3,7 @@ import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CredentialsDisplay } from "@/components/credentials-display";
 import { useCheckPaymentStatus, getCheckPaymentStatusQueryKey } from "@workspace/api-client-react";
 import { CheckCircle, XCircle, Clock, Loader2, Download, Shield, Search, RefreshCw } from "lucide-react";
 import { apiUrl } from "@/lib/api";
@@ -188,7 +189,7 @@ export default function OrderStatus() {
                 <p className="text-muted-foreground text-sm">Your VPN config is ready. It has been delivered to your device.</p>
               </div>
 
-              <div className="bg-green-400/10 border border-green-400/20 rounded-lg p-4 w-full text-left space-y-2">
+              <div className="bg-green-400/10 border border-green-400/20 rounded-lg p-4 w-full text-left space-y-3">
                 <p className="text-sm text-green-400 font-medium flex items-center gap-2">
                   <Shield className="w-4 h-4" /> Order Confirmed
                 </p>
@@ -204,6 +205,13 @@ export default function OrderStatus() {
                 )}
                 <p className="text-xs font-mono text-muted-foreground break-all">Ref: {ref}</p>
               </div>
+
+              {orderData && (
+                <div className="w-full">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Credential Format Reference</p>
+                  <CredentialsDisplay appType={orderData.appType as "http_custom" | "http_injector"} />
+                </div>
+              )}
 
               <div className="flex flex-col gap-3 w-full">
                 {configUrl ? (
