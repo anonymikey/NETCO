@@ -13,18 +13,10 @@ interface NotificationsDropdownProps {
 export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
   const { notifications, isLoading, markAllRead, unreadCount } = useNotifications();
 
-  // Close on outside click
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest("[data-notification-dropdown]")) {
-        onClose();
-      }
-    };
+  // Note: Click-outside is handled by the parent NotificationBell component
+  // which renders a full-screen overlay (z-40) that triggers onClose when clicked
 
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, [onClose]);
+  console.log("[v0] NotificationsDropdown rendering. Notifications:", notifications.length, "Unread:", unreadCount);
 
   return (
     <div
