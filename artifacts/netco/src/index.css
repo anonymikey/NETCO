@@ -160,7 +160,11 @@
   
   /* SaaS Dashboard Utilities */
   .stat-card {
-    @apply group relative p-6 rounded-lg border border-border/50 bg-card/30 backdrop-blur-sm transition-all duration-300 hover:border-primary/40 hover:bg-card/50 hover:shadow-lg;
+    @apply relative p-6 rounded-lg border border-border/50 bg-card/30 backdrop-blur-sm transition-all duration-300;
+  }
+  
+  .stat-card:hover {
+    @apply border-primary/40 bg-card/50 shadow-lg;
   }
   
   .dashboard-table {
@@ -168,7 +172,15 @@
   }
   
   .table-row {
-    @apply glass-card rounded-lg p-4 transition-all hover:bg-card/80 hover:border-primary/30;
+    @apply rounded-lg p-4 transition-all;
+    background: hsl(var(--card) / 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+  
+  .table-row:hover {
+    background: hsl(var(--card) / 0.95);
+    border-color: hsl(var(--primary) / 0.3);
   }
   
   /* Animation enhancements */
