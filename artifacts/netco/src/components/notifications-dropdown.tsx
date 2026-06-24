@@ -29,7 +29,7 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
   return (
     <div
       data-notification-dropdown
-      className="absolute right-0 top-12 w-96 max-w-[calc(100vw-16px)] bg-card border border-border rounded-lg shadow-lg z-50 flex flex-col max-h-[600px]"
+      className="w-96 max-w-[calc(100vw-16px)] bg-card border border-border rounded-lg shadow-lg flex flex-col max-h-[600px]"
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">

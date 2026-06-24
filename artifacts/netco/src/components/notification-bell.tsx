@@ -3,19 +3,37 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNotifications } from "@/hooks/use-notifications";
 import { NotificationsDropdown } from "./notifications-dropdown";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 export function NotificationBell() {
   const { unreadCount } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
+  const bellRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen && bellRef.current) {
+      const rect = bellRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right,
+      });
+    }
+  }, [isOpen]);
+
+  const handleBellClick = () => {
+    console.log("[v0] Bell clicked, isOpen was:", isOpen);
+    setIsOpen(!isOpen);
+    console.log("[v0] Bell clicked, isOpen now:", !isOpen);
+  };
 
   return (
-    <div className="relative">
+    <div ref={bellRef} className="relative">
       <Button
         variant="ghost"
         size="icon"
         className="relative"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleBellClick}
         aria-label="Notifications"
       >
         <Bell className="w-5 h-5" />
@@ -29,7 +47,21 @@ export function NotificationBell() {
         )}
       </Button>
 
-      {isOpen && <NotificationsDropdown onClose={() => setIsOpen(false)} />}
+      {isOpen && (
+        <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+      )}
+      {isOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: `${dropdownPos.top}px`,
+            right: `${dropdownPos.right}px`,
+          }}
+          className="z-50"
+        >
+          <NotificationsDropdown onClose={() => setIsOpen(false)} />
+        </div>
+      )}
     </div>
   );
 }
