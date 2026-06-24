@@ -14,10 +14,12 @@ export function NotificationBell() {
   useEffect(() => {
     if (isOpen && bellRef.current) {
       const rect = bellRef.current.getBoundingClientRect();
-      setDropdownPos({
+      const newPos = {
         top: rect.bottom + 8,
         right: window.innerWidth - rect.right,
-      });
+      };
+      console.log("[v0] Dropdown position:", newPos, "Bell rect:", rect);
+      setDropdownPos(newPos);
     }
   }, [isOpen]);
 
@@ -51,16 +53,19 @@ export function NotificationBell() {
         <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
       )}
       {isOpen && (
-        <div
-          style={{
-            position: "fixed",
-            top: `${dropdownPos.top}px`,
-            right: `${dropdownPos.right}px`,
-          }}
-          className="z-50"
-        >
-          <NotificationsDropdown onClose={() => setIsOpen(false)} />
-        </div>
+        <>
+          {console.log("[v0] Rendering dropdown at:", dropdownPos)}
+          <div
+            style={{
+              position: "fixed",
+              top: `${dropdownPos.top}px`,
+              right: `${dropdownPos.right}px`,
+              zIndex: 50,
+            }}
+          >
+            <NotificationsDropdown onClose={() => setIsOpen(false)} />
+          </div>
+        </>
       )}
     </div>
   );
