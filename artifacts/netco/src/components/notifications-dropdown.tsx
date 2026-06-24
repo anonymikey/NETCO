@@ -1,9 +1,8 @@
-import { useEffect } from "react";
 import { useNotifications } from "@/hooks/use-notifications";
 import { NotificationCard } from "./notification-card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCheck, Loader2 } from "lucide-react";
+import { CheckCheck, Loader2, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NotificationsDropdownProps {
@@ -13,18 +12,13 @@ interface NotificationsDropdownProps {
 export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
   const { notifications, isLoading, markAllRead, unreadCount } = useNotifications();
 
-  // Note: Click-outside is handled by the parent NotificationBell component
-  // which renders a full-screen overlay (z-40) that triggers onClose when clicked
-
-  console.log("[v0] NotificationsDropdown rendering. Notifications:", notifications.length, "Unread:", unreadCount);
-
   return (
     <div
       data-notification-dropdown
-      className="w-96 max-w-[calc(100vw-16px)] bg-card border border-border rounded-lg shadow-lg flex flex-col max-h-[600px]"
+      className="w-96 max-w-[calc(100vw-16px)] bg-card border border-border rounded-lg shadow-2xl flex flex-col max-h-[500px] overflow-hidden"
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-card to-card/50">
         <h2 className="font-semibold text-foreground">Notifications</h2>
         {unreadCount > 0 && (
           <Button
@@ -41,12 +35,14 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
 
       {/* Content */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-8">
+        <div className="flex items-center justify-center py-12">
           <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
         </div>
       ) : notifications.length === 0 ? (
-        <div className="flex items-center justify-center py-12">
-          <p className="text-sm text-muted-foreground">No notifications yet</p>
+        <div className="flex flex-col items-center justify-center py-12 px-4">
+          <Bell className="w-12 h-12 text-muted-foreground/40 mb-3" />
+          <p className="text-sm text-muted-foreground text-center">No notifications yet</p>
+          <p className="text-xs text-muted-foreground/70 text-center mt-1">You&apos;re all caught up!</p>
         </div>
       ) : (
         <ScrollArea className="flex-1">

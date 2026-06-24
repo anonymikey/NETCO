@@ -1,6 +1,5 @@
 import { Notification } from "@workspace/db";
-import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle, Info, AlertTriangle, Package, CreditCard, Gift, X } from "lucide-react";
+import { AlertCircle, CheckCircle, Info, AlertTriangle, Package, CreditCard, Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNotifications } from "@/hooks/use-notifications";
 
@@ -9,13 +8,13 @@ interface NotificationCardProps {
 }
 
 const typeConfig = {
-  info: { icon: Info, color: "text-blue-500", bg: "bg-blue-50" },
-  success: { icon: CheckCircle, color: "text-green-500", bg: "bg-green-50" },
-  warning: { icon: AlertTriangle, color: "text-yellow-500", bg: "bg-yellow-50" },
-  error: { icon: AlertCircle, color: "text-red-500", bg: "bg-red-50" },
-  order: { icon: Package, color: "text-purple-500", bg: "bg-purple-50" },
-  payment: { icon: CreditCard, color: "text-indigo-500", bg: "bg-indigo-50" },
-  plan: { icon: Gift, color: "text-pink-500", bg: "bg-pink-50" },
+  info: { icon: Info, accent: "from-cyan-500/20 to-cyan-500/10", dot: "bg-cyan-500" },
+  success: { icon: CheckCircle, accent: "from-green-500/20 to-green-500/10", dot: "bg-green-500" },
+  warning: { icon: AlertTriangle, accent: "from-yellow-500/20 to-yellow-500/10", dot: "bg-yellow-500" },
+  error: { icon: AlertCircle, accent: "from-red-500/20 to-red-500/10", dot: "bg-red-500" },
+  order: { icon: Package, accent: "from-purple-500/20 to-purple-500/10", dot: "bg-purple-500" },
+  payment: { icon: CreditCard, accent: "from-indigo-500/20 to-indigo-500/10", dot: "bg-indigo-500" },
+  plan: { icon: Gift, accent: "from-pink-500/20 to-pink-500/10", dot: "bg-pink-500" },
 };
 
 export function NotificationCard({ notification }: NotificationCardProps) {
@@ -40,25 +39,27 @@ export function NotificationCard({ notification }: NotificationCardProps) {
   return (
     <div
       className={cn(
-        "flex gap-3 p-3 rounded-lg border transition-all cursor-pointer hover:shadow-md",
-        notification.isRead ? "bg-white border-gray-200" : "bg-blue-50 border-blue-200"
+        "flex gap-3 p-3 rounded-lg border transition-all duration-200 cursor-pointer hover:shadow-lg",
+        notification.isRead
+          ? "bg-card/50 border-border hover:bg-card"
+          : `bg-gradient-to-r ${config.accent} border-border hover:bg-card/60`
       )}
       onClick={handleMarkRead}
     >
-      <div className={cn("flex-shrink-0 mt-1", config.color)}>
+      <div className="flex-shrink-0 mt-1 opacity-70">
         <Icon className="w-5 h-5" />
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className={cn("font-semibold text-sm", notification.isRead ? "text-gray-700" : "text-gray-900")}>
+        <p className="font-semibold text-sm text-foreground line-clamp-1">
           {notification.title}
         </p>
-        <p className="text-xs text-gray-600 line-clamp-2">{notification.message}</p>
-        <p className="text-xs text-gray-500 mt-1">{timeAgo(notification.createdAt)}</p>
+        <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{notification.message}</p>
+        <p className="text-xs text-muted-foreground/60 mt-1">{timeAgo(notification.createdAt)}</p>
       </div>
 
       {!notification.isRead && (
-        <div className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-2" />
+        <div className={cn("flex-shrink-0 w-2 h-2 rounded-full mt-2", config.dot)} />
       )}
     </div>
   );
