@@ -22,19 +22,19 @@ async function getAuthHeader() {
 const notificationsAPI: NotificationsAPI = {
   getNotifications: async (limit = 20, offset = 0) => {
     const headers = await getAuthHeader();
-    const response = await fetch(apiUrl(`/notifications?limit=${limit}&offset=${offset}`), { headers });
+    const response = await fetch(apiUrl(`/api/notifications?limit=${limit}&offset=${offset}`), { headers });
     if (!response.ok) throw new Error("Failed to fetch notifications");
     return response.json();
   },
   getUnreadCount: async () => {
     const headers = await getAuthHeader();
-    const response = await fetch(apiUrl("/notifications/unread-count"), { headers });
+    const response = await fetch(apiUrl("/api/notifications/unread-count"), { headers });
     if (!response.ok) throw new Error("Failed to fetch unread count");
     return response.json();
   },
   markRead: async (notificationId: string) => {
     const headers = await getAuthHeader();
-    const response = await fetch(apiUrl(`/notifications/${notificationId}/read`), {
+    const response = await fetch(apiUrl(`/api/notifications/${notificationId}/read`), {
       method: "POST",
       headers,
     });
@@ -42,7 +42,7 @@ const notificationsAPI: NotificationsAPI = {
   },
   markAllRead: async () => {
     const headers = await getAuthHeader();
-    const response = await fetch(apiUrl("/notifications/read-all"), {
+    const response = await fetch(apiUrl("/api/notifications/read-all"), {
       method: "POST",
       headers,
     });
