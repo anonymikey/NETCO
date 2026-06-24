@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { db, notificationsTable } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
-import { markNotificationRead, markAllNotificationsRead, getNotifications } from "../lib/notifications";
+import { markNotificationRead, markAllNotificationsRead, getNotifications, getUnreadCount } from "../lib/notifications";
 
 const router = Router();
 
@@ -45,13 +45,10 @@ router.get("/unread-count", async (req, res) => {
       return;
     }
 
-    const [result] = await db
-      .select({ count: db.fn.count(notificationsTable.id).mapWith(Number) })
-      .from(notificationsTable)
-      .where(and(eq(notificationsTable.userId, userId), eq(notificationsTable.isRead, false)));
-
-    res.json({ count: result?.count || 0 });
+    const count = await getUnreadCount(userId);
+    res.json({ count });
   } catch (error) {
+    console.error("[v0] Unread count error:", error);
     res.status(500).json({ error: "Failed to fetch unread count" });
   }
 });
