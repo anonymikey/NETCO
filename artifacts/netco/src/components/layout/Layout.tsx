@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { useLocation } from "wouter";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 
@@ -7,11 +8,14 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
+  const [location] = useLocation();
+  const isAdminRoute = location.startsWith("/admin");
+
   return (
     <div className="min-h-[100dvh] flex flex-col w-full bg-background text-foreground selection:bg-primary/30 selection:text-primary-foreground">
-      <Navbar />
+      {!isAdminRoute && <Navbar />}
       <main className="flex-grow flex flex-col">{children}</main>
-      <Footer />
+      {!isAdminRoute && <Footer />}
     </div>
   );
 }
