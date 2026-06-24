@@ -14,8 +14,8 @@ export function CredentialsDisplay({ appType, compact = false }: CredentialsDisp
   const hwid = "0979c85da5eef2f998334156cb53edf6";
 
   const credentials = appType === "http_custom"
-    ? { label: "Device ID Format", value: deviceId, type: "HTTP Custom" }
-    : { label: "HWID Format", value: hwid, type: "HTTP Injector" };
+    ? { label: "HWID Format", value: hwid, type: "HTTP Custom" }
+    : { label: "Device ID Format", value: deviceId, type: "HTTP Injector" };
 
   const handleCopy = (text: string, field: string) => {
     navigator.clipboard.writeText(text);

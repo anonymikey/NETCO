@@ -270,8 +270,8 @@ export default function Checkout() {
             <div className="bg-secondary/5 border border-secondary/20 rounded-lg p-4 text-sm text-muted-foreground">
               <strong className="text-secondary">{appType === "http_custom" ? "HTTP Custom" : "HTTP Injector"}</strong> —{" "}
               {appType === "http_custom"
-                ? "Open the app → Menu → Device ID (copy the long alphanumeric string)"
-                : "Open app → Config → Export → find your HWID at the top"}
+                ? "Open the app → Menu → Find your HWID (32 lowercase hex characters)"
+                : "Open app → Config → Export → find your Device ID at the top (33 uppercase alphanumeric)"}
             </div>
 
             <CredentialsDisplay appType={appType} />
