@@ -11,7 +11,7 @@ interface AdminNotificationsAPI {
 
 const adminNotificationsAPI: AdminNotificationsAPI = {
   broadcast: async (title, message, type) => {
-    const response = await fetch(apiUrl("/admin/notifications/broadcast"), {
+    const response = await fetch(apiUrl("/api/admin/notifications/broadcast"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, message, type }),
@@ -20,7 +20,7 @@ const adminNotificationsAPI: AdminNotificationsAPI = {
     return response.json();
   },
   sendToUser: async (userId, title, message, type) => {
-    const response = await fetch(apiUrl("/admin/notifications/send-to-user"), {
+    const response = await fetch(apiUrl("/api/admin/notifications/send-to-user"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, title, message, type }),
@@ -29,7 +29,7 @@ const adminNotificationsAPI: AdminNotificationsAPI = {
     return response.json();
   },
   sendToUsers: async (userIds, title, message, type) => {
-    const response = await fetch(apiUrl("/admin/notifications/send-to-users"), {
+    const response = await fetch(apiUrl("/api/admin/notifications/send-to-users"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userIds, title, message, type }),
