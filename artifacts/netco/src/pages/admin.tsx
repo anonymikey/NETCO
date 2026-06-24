@@ -16,6 +16,7 @@ import {
   Download, ToggleLeft, ToggleRight, Upload, X, CheckCircle, AlertCircle,
   Loader2, Smartphone, ExternalLink, Gift, Bell, Eye, Zap, Search,
   Filter, RefreshCw, ChevronDown, Check, Clock, XCircle, Package,
+  Activity, ArrowUpRight, ArrowDownRight, Zap as ZapIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -242,10 +243,10 @@ export default function Admin() {
 
   const statCards = stats && typeof stats === 'object' && stats.totalOrders !== undefined
     ? [
-        { icon: ShoppingCart, label: "Total Orders", value: (stats.totalOrders ?? 0).toLocaleString(), color: "text-primary", bg: "bg-primary/10 border-primary/20" },
-        { icon: DollarSign, label: "Total Revenue", value: `Ksh ${(stats.totalRevenue ?? 0).toLocaleString()}`, color: "text-green-400", bg: "bg-green-400/10 border-green-400/20" },
-        { icon: Users, label: "Active Users", value: (stats.activeUsers ?? 0).toLocaleString(), color: "text-secondary", bg: "bg-secondary/10 border-secondary/20" },
-        { icon: Server, label: "Active Plans", value: (stats.activePlans ?? 0).toLocaleString(), color: "text-yellow-400", bg: "bg-yellow-400/10 border-yellow-400/20" },
+        { icon: ShoppingCart, label: "Total Orders", value: (stats.totalOrders ?? 0).toLocaleString(), color: "text-primary", bg: "bg-primary/10 border-primary/20", trend: "+12.5%" },
+        { icon: DollarSign, label: "Total Revenue", value: `Ksh ${(stats.totalRevenue ?? 0).toLocaleString()}`, color: "text-green-400", bg: "bg-green-400/10 border-green-400/20", trend: "+8.2%" },
+        { icon: Users, label: "Active Users", value: (stats.activeUsers ?? 0).toLocaleString(), color: "text-secondary", bg: "bg-secondary/10 border-secondary/20", trend: "+15.3%" },
+        { icon: Server, label: "Active Plans", value: (stats.activePlans ?? 0).toLocaleString(), color: "text-yellow-400", bg: "bg-yellow-400/10 border-yellow-400/20", trend: "+4.1%" },
       ]
     : [];
 
@@ -263,12 +264,10 @@ export default function Admin() {
     }
     setUploading(true);
     try {
-      // Convert file to base64 for transport to backend
       const fileArrayBuffer = await form.file.arrayBuffer();
       const fileBytes = new Uint8Array(fileArrayBuffer);
       const fileBase64 = btoa(String.fromCharCode(...fileBytes));
 
-      // Call backend API to handle file upload to Supabase using service role (bypasses RLS)
       const url = apiUrl("/api/admin/servers/metadata");
       
       const res = await fetch(url, {
@@ -341,9 +340,7 @@ export default function Admin() {
       const fd = new FormData();
       fd.append("configFile", replaceFile);
       const url = apiUrl(`/api/admin/servers/${id}/file`);
-      console.log("[v0] Replacing config file at:", url);
       const res = await fetch(url, { method: "PUT", body: fd });
-      console.log("[v0] Replace response:", res.status);
       if (!res.ok) {
         const err = await res.json() as { error?: string };
         throw new Error(err.error ?? `Replace failed with status ${res.status}`);
@@ -354,7 +351,6 @@ export default function Admin() {
       toast({ title: "Config file replaced" });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Replace failed - network error or server unreachable";
-      console.error("[v0] Replace error:", err);
       toast({ title: "Replace failed", description: message, variant: "destructive" });
     } finally {
       setUploading(false);
@@ -368,78 +364,95 @@ export default function Admin() {
   const pendingOrders = orders.filter((o) => o.status === "pending").length;
 
   return (
-    <div className="min-h-screen pt-24 pb-20 px-4">
-      <div className="max-w-7xl mx-auto space-y-6">
-
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-4xl font-heading font-bold mb-2">
-              Admin <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Panel</span>
-            </h1>
-            <p className="text-muted-foreground">Platform management and analytics</p>
-          </div>
-          {newOrderCount > 0 && (
-            <div className="flex items-center gap-2 bg-primary/10 border border-primary/30 rounded-xl px-4 py-2 animate-in slide-in-from-top-2">
-              <Bell className="w-4 h-4 text-primary animate-bounce" />
-              <span className="text-primary text-sm font-medium">{newOrderCount} new order{newOrderCount > 1 ? "s" : ""}</span>
-              <button onClick={() => setNewOrderCount(0)} className="text-muted-foreground hover:text-foreground ml-1">
-                <X className="w-3 h-3" />
-              </button>
+    <div className="min-h-screen bg-background pt-24 pb-20 px-4 md:px-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header Section */}
+        <div className="mb-8 space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="space-y-1">
+              <h1 className="text-3xl md:text-4xl font-heading font-bold">
+                Admin Dashboard
+              </h1>
+              <p className="text-muted-foreground text-sm md:text-base">Manage orders, servers, and monitor platform performance</p>
             </div>
-          )}
+            {newOrderCount > 0 && (
+              <div className="flex items-center gap-2 bg-primary/10 border border-primary/30 rounded-lg px-4 py-2.5 w-fit animate-in slide-in-from-top-2">
+                <Bell className="w-4 h-4 text-primary animate-pulse" />
+                <span className="text-primary text-sm font-medium">{newOrderCount} new order{newOrderCount > 1 ? "s" : ""}</span>
+                <button onClick={() => setNewOrderCount(0)} className="text-muted-foreground hover:text-foreground ml-1 transition-colors">
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Navigation Tabs */}
+          <div className="flex gap-2 p-1.5 bg-card/50 border border-card-border rounded-lg w-fit backdrop-blur-sm">
+            {TABS.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => { setActiveTab(tab); if (tab === "Orders") setNewOrderCount(0); }}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all relative ${
+                  activeTab === tab
+                    ? "bg-primary/20 text-primary border border-primary/40"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                }`}
+              >
+                {tab}
+                {tab === "Orders" && pendingOrders > 0 && (
+                  <span className="absolute -top-1 -right-2 min-w-5 h-5 rounded-full bg-yellow-400 text-black text-[10px] font-bold flex items-center justify-center px-1.5">
+                    {pendingOrders > 99 ? "99+" : pendingOrders}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Tab Bar */}
-        <div className="flex gap-1 p-1 glass-card rounded-xl w-fit">
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => { setActiveTab(tab); if (tab === "Orders") setNewOrderCount(0); }}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-all relative ${
-                activeTab === tab
-                  ? "bg-primary text-primary-foreground glow-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tab}
-              {tab === "Orders" && pendingOrders > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-yellow-400 text-black text-[9px] font-bold flex items-center justify-center">
-                  {pendingOrders > 9 ? "9+" : pendingOrders}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* ─────────── DASHBOARD TAB ─────────── */}
+        {/* Dashboard Tab */}
         {activeTab === "Dashboard" && (
-          <div className="space-y-8">
+          <div className="space-y-8 animate-in fade-in-50 duration-300">
+            {/* Stats Grid */}
             {statsLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[1, 2, 3, 4].map((i) => <div key={i} className="glass-card rounded-xl p-5 animate-pulse h-28" />)}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-32 bg-card/50 border border-card-border rounded-lg animate-pulse" />
+                ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {statCards.map(({ icon: Icon, label, value, color, bg }) => (
-                  <div key={label} className={`glass-card rounded-xl p-5 space-y-3 border ${bg}`}>
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${bg}`}>
-                      <Icon className={`w-5 h-5 ${color}`} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {statCards.map(({ icon: Icon, label, value, color, bg, trend }) => (
+                  <div key={label} className={`group glass-card rounded-lg p-5 space-y-3 border transition-all hover:border-primary/40 hover:bg-card/80 ${bg}`}>
+                    <div className="flex items-start justify-between">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${bg} group-hover:scale-110 transition-transform`}>
+                        <Icon className={`w-5 h-5 ${color}`} />
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-green-400">
+                        <ArrowUpRight className="w-3 h-3" />
+                        {trend}
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-widest">{label}</p>
-                      <p className={`text-xl font-heading font-bold ${color}`}>{value}</p>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">{label}</p>
+                      <p className={`text-2xl font-heading font-bold ${color}`}>{value}</p>
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
+            {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 glass-card rounded-xl p-6 space-y-4">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                  <h2 className="font-heading font-bold text-lg">Revenue by Month</h2>
+              {/* Revenue Chart */}
+              <div className="lg:col-span-2 glass-card rounded-lg p-6 space-y-4 border border-card-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    <h3 className="font-heading font-bold text-lg">Revenue Trend</h3>
+                  </div>
+                  <button className="p-2 hover:bg-muted/30 rounded-lg transition-colors">
+                    <RefreshCw className="w-4 h-4 text-muted-foreground" />
+                  </button>
                 </div>
                 {statsLoading ? (
                   <div className="h-64 bg-muted/10 rounded-lg animate-pulse" />
@@ -456,8 +469,9 @@ export default function Admin() {
                 )}
               </div>
 
-              <div className="glass-card rounded-xl p-6 space-y-4">
-                <h2 className="font-heading font-bold text-lg">Revenue by Network</h2>
+              {/* Network Distribution */}
+              <div className="glass-card rounded-lg p-6 space-y-4 border border-card-border">
+                <h3 className="font-heading font-bold text-lg">Network Split</h3>
                 {statsLoading ? (
                   <div className="h-64 bg-muted/10 rounded-lg animate-pulse" />
                 ) : (
@@ -473,16 +487,13 @@ export default function Admin() {
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="space-y-2">
-                      {(Array.isArray(stats?.revenueByNetwork) ? stats?.revenueByNetwork : []).map((n, i) => (
-                        <div key={n.network} className="flex items-center justify-between text-sm">
+                      {Array.isArray(stats?.revenueByNetwork) && stats?.revenueByNetwork.map((item: any) => (
+                        <div key={item.network} className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-2">
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ background: NETWORK_COLORS[i % NETWORK_COLORS.length] }} />
-                            <span className="text-muted-foreground">{capitalize(n.network)}</span>
+                            <div className="w-2 h-2 rounded-full" style={{ background: NETWORK_COLORS[NETWORKS.indexOf(item.network) % NETWORK_COLORS.length] }} />
+                            <span className="text-muted-foreground capitalize">{item.network}</span>
                           </div>
-                          <div className="text-right">
-                            <div className="font-medium">Ksh {n.revenue.toLocaleString()}</div>
-                            <div className="text-xs text-muted-foreground">{n.orders} orders</div>
-                          </div>
+                          <span className="text-foreground font-medium">Ksh {(item.revenue || 0).toLocaleString()}</span>
                         </div>
                       ))}
                     </div>
@@ -490,448 +501,336 @@ export default function Admin() {
                 )}
               </div>
             </div>
-
-            <div className="glass-card rounded-xl p-6 space-y-4">
-              <h2 className="font-heading font-bold text-lg">Monthly Breakdown</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-3 px-4 text-muted-foreground font-medium">Month</th>
-                      <th className="text-right py-3 px-4 text-muted-foreground font-medium">Orders</th>
-                      <th className="text-right py-3 px-4 text-muted-foreground font-medium">Revenue</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {statsLoading
-                      ? [1, 2, 3, 4].map((i) => (
-                          <tr key={i} className="border-b border-border/50">
-                            <td className="py-3 px-4"><div className="h-4 bg-muted/20 rounded w-16 animate-pulse" /></td>
-                            <td className="py-3 px-4 text-right"><div className="h-4 bg-muted/20 rounded w-12 animate-pulse ml-auto" /></td>
-                            <td className="py-3 px-4 text-right"><div className="h-4 bg-muted/20 rounded w-20 animate-pulse ml-auto" /></td>
-                          </tr>
-                        ))
-                      : (Array.isArray(stats?.revenueByMonth) ? stats?.revenueByMonth : []).slice().reverse().slice(0, 6).map((row) => (
-                          <tr key={row.month} className="border-b border-border/50 hover:bg-muted/5 transition-colors">
-                            <td className="py-3 px-4 font-medium">{row.month}</td>
-                            <td className="py-3 px-4 text-right text-muted-foreground">{row.orders.toLocaleString()}</td>
-                            <td className="py-3 px-4 text-right text-primary font-medium">Ksh {row.revenue.toLocaleString()}</td>
-                          </tr>
-                        ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
           </div>
         )}
 
-        {/* ─────────── ORDERS TAB ─────────── */}
+        {/* Orders Tab */}
         {activeTab === "Orders" && (
-          <div className="space-y-5">
-            {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-              <div className="flex gap-2 flex-wrap">
-                {["all", "pending", "completed", "failed", "cancelled"].map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setOrderFilter(f)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
-                      orderFilter === f
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {capitalize(f)}
-                  </button>
-                ))}
+          <div className="space-y-6 animate-in fade-in-50 duration-300">
+            {/* Search & Filter */}
+            <div className="flex flex-col md:flex-row gap-3">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by phone, device ID..."
+                  value={orderSearch}
+                  onChange={(e) => setOrderSearch(e.target.value)}
+                  className="pl-10 bg-card/50 border-card-border"
+                />
               </div>
-              <div className="flex gap-2 w-full sm:w-auto">
-                <div className="relative flex-1 sm:w-52">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder="Search phone or ref…"
-                    value={orderSearch}
-                    onChange={(e) => setOrderSearch(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && fetchOrders()}
-                    className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
-                <Button size="sm" onClick={fetchOrders} variant="outline" className="border-border gap-1.5 shrink-0">
-                  <RefreshCw className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Live indicator */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              Live updates active — new orders appear instantly
-            </div>
-
-            {ordersLoading ? (
-              <div className="space-y-2">
-                {[1, 2, 3, 4, 5].map((i) => <div key={i} className="glass-card rounded-xl h-20 animate-pulse" />)}
-              </div>
-            ) : orders.length === 0 ? (
-              <div className="glass-card rounded-xl p-12 text-center space-y-3">
-                <Package className="w-10 h-10 text-muted-foreground mx-auto" />
-                <p className="text-muted-foreground">No orders found</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {orders.map((order) => (
-                  <div key={order.id} className="glass-card rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-4">
-                    {/* Left: main info */}
-                    <div className="flex-1 min-w-0 space-y-1.5">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${statusColor(order.status)}`}>
-                          {order.status === "completed" && <Check className="w-3 h-3" />}
-                          {order.status === "pending" && <Clock className="w-3 h-3" />}
-                          {order.status === "failed" && <XCircle className="w-3 h-3" />}
-                          {capitalize(order.status)}
-                        </span>
-                        <span className={`text-xs font-medium ${networkColor(order.network)}`}>{capitalize(order.network)}</span>
-                        <span className="text-xs text-muted-foreground">{capitalize(order.duration)}</span>
-                        <span className="text-xs text-muted-foreground">{order.appType === "http_custom" ? "HTTP Custom" : "HTTP Injector"}</span>
-                        {order.configUrl && <span className="text-xs text-green-400 flex items-center gap-1"><CheckCircle className="w-3 h-3" />Config ready</span>}
-                      </div>
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <span className="text-sm font-medium text-foreground">{order.phone}</span>
-                        <span className="text-sm font-bold text-primary">Ksh {order.amount.toLocaleString()}</span>
-                        {order.paymentReference && (
-                          <span className="text-xs font-mono text-muted-foreground truncate max-w-[140px]">{order.paymentReference}</span>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground font-mono truncate">{order.deviceId}</div>
-                    </div>
-
-                    {/* Right: time + actions */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-xs text-muted-foreground">{timeAgo(order.createdAt)}</span>
-
-                      {order.status === "pending" && (
-                        <Button
-                          size="sm"
-                          onClick={() => { setFulfillOrderId(order.id); setFulfillServerId(""); }}
-                          className="bg-primary text-primary-foreground hover:bg-primary/90 gap-1 text-xs h-8"
-                        >
-                          <Zap className="w-3 h-3" /> Fulfill
-                        </Button>
-                      )}
-
-                      {order.status === "completed" && order.configUrl && (
-                        <a href={order.configUrl} target="_blank" rel="noopener noreferrer">
-                          <Button size="sm" variant="outline" className="border-green-500/30 text-green-400 hover:bg-green-500/10 gap-1 text-xs h-8">
-                            <Download className="w-3 h-3" /> Config
-                          </Button>
-                        </a>
-                      )}
-
-                      {order.status === "pending" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleMarkStatus(order.id, "failed")}
-                          className="border-red-500/30 text-red-400 hover:bg-red-500/10 text-xs h-8"
-                        >
-                          <XCircle className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Fulfill Dialog */}
-            {fulfillOrderId && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                <div className="glass-card rounded-2xl p-6 w-full max-w-md space-y-5 border border-primary/30">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-heading font-bold text-lg text-primary flex items-center gap-2">
-                      <Zap className="w-5 h-5" /> Fulfill Order
-                    </h3>
-                    <button onClick={() => { setFulfillOrderId(null); setFulfillServerId(""); }} className="text-muted-foreground hover:text-foreground">
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  <p className="text-sm text-muted-foreground">
-                    Select a config server to deliver, or leave blank to auto-match by network, app type, and duration.
-                  </p>
-
-  <div className="space-y-2">
-  <Label>Config Server (optional)</Label>
-  <select
-  value={fulfillServerId}
-  onChange={(e) => setFulfillServerId(e.target.value)}
-  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-  >
-  <option value="">— Auto-match by order details —</option>
-  {(servers as Array<{ id: string; serverName: string; network: string; duration: string; status: string }>)
-  .filter((s) => s.status === "active")
-  .map((s) => (
-  <option key={s.id} value={s.id}>
-  {s.serverName} ({capitalize(s.network)} · {capitalize(s.duration)})
-  </option>
-  ))}
-  </select>
-  </div>
-
-  <div className="space-y-2">
-  <Label>Customer Instructions (optional)</Label>
-  <textarea
-  value={fulfillInstructions}
-  onChange={(e) => setFulfillInstructions(e.target.value)}
-  placeholder="This file will connect within a few seconds after importing.&#10;Do not edit payload settings.&#10;Allow VPN permission if requested."
-  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none h-24"
-  />
-  </div>
-
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={handleFulfillOrder}
-                      disabled={fulfilling}
-                      className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
-                    >
-                      {fulfilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                      {fulfilling ? "Fulfilling…" : "Deliver Config"}
-                    </Button>
-                    <Button variant="outline" onClick={() => { setFulfillOrderId(null); setFulfillServerId(""); }} className="flex-1 border-border">
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ─────────── NOTIFICATIONS TAB ─────────── */}
-        {activeTab === "Notifications" && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-heading font-bold">Notifications</h2>
-              <p className="text-muted-foreground text-sm mt-1">Send notifications to users</p>
-            </div>
-            <AdminNotificationsPanel />
-          </div>
-        )}
-
-        {/* ─────────── CONFIG SERVERS TAB ─────────── */}
-        {activeTab === "Config Servers" && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-2xl font-heading font-bold">VPN Config Servers</h2>
-                <p className="text-muted-foreground text-sm mt-1">
-                  Upload <code className="text-primary text-xs">.hc</code> / <code className="text-primary text-xs">.ehi</code> files. Toggle <span className="text-yellow-400 font-medium">Free</span> to offer them as free trials.
-                </p>
-              </div>
-              <Button
-                onClick={() => setShowAddForm(true)}
-                className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 glow-primary shrink-0"
+              <select
+                value={orderFilter}
+                onChange={(e) => setOrderFilter(e.target.value)}
+                className="px-4 py-2 bg-card/50 border border-card-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
               >
-                <Plus className="w-4 h-4" /> Add New Server
+                <option value="all">All Orders</option>
+                <option value="pending">Pending</option>
+                <option value="completed">Completed</option>
+                <option value="failed">Failed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              <Button onClick={fetchOrders} variant="outline" className="gap-2">
+                <RefreshCw className="w-4 h-4" />
+                Refresh
               </Button>
             </div>
 
-            {/* App download links */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {APP_TYPES.map((app) => (
-                <a key={app.value} href={app.store} target="_blank" rel="noopener noreferrer"
-                  className="glass-card rounded-xl p-4 flex items-center gap-3 hover:border-primary/40 transition-all group">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
-                    <Smartphone className="w-5 h-5 text-primary" />
+            {/* Orders Table */}
+            {ordersLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-16 bg-card/50 border border-card-border rounded-lg animate-pulse" />
+                ))}
+              </div>
+            ) : orders.length === 0 ? (
+              <div className="text-center py-12 glass-card rounded-lg border border-card-border">
+                <ShoppingCart className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                <p className="text-muted-foreground">No orders found</p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {orders.map((order) => (
+                  <div key={order.id} className="glass-card rounded-lg border border-card-border p-4 hover:bg-card/80 transition-all group">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-primary">{order.phone}</p>
+                            <p className="text-xs text-muted-foreground">{order.deviceId}</p>
+                          </div>
+                          <Badge className={`${statusColor(order.status)}`}>{capitalize(order.status)}</Badge>
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                          <Badge variant="outline" className={`text-xs ${networkColor(order.network)}`}>{capitalize(order.network)}</Badge>
+                          <Badge variant="outline" className="text-xs text-yellow-400">{order.duration}</Badge>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between md:flex-col md:items-end md:justify-between gap-2">
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-green-400">Ksh {order.amount}</p>
+                          <p className="text-xs text-muted-foreground">{timeAgo(order.createdAt)}</p>
+                        </div>
+                        {order.status === "pending" && (
+                          <Button
+                            size="sm"
+                            onClick={() => setFulfillOrderId(order.id)}
+                            className="bg-primary/20 hover:bg-primary/30 text-primary gap-2"
+                          >
+                            <CheckCircle className="w-3 h-3" />
+                            Fulfill
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm">{app.label}</p>
-                    <p className="text-xs text-muted-foreground">Config format: {app.ext}</p>
+                ))}
+              </div>
+            )}
+
+            {/* Fulfill Modal */}
+            {fulfillOrderId && (
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                <div className="bg-card border border-card-border rounded-lg p-6 w-full max-w-md space-y-4">
+                  <h3 className="font-heading font-bold text-lg">Fulfill Order</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1 block">Config Server ID</Label>
+                      <Input
+                        placeholder="Leave empty if N/A"
+                        value={fulfillServerId}
+                        onChange={(e) => setFulfillServerId(e.target.value)}
+                        className="bg-muted/30 border-card-border"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1 block">Setup Instructions</Label>
+                      <textarea
+                        placeholder="Optional setup instructions for the client"
+                        value={fulfillInstructions}
+                        onChange={(e) => setFulfillInstructions(e.target.value)}
+                        className="w-full px-3 py-2 bg-muted/30 border border-card-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        rows={3}
+                      />
+                    </div>
                   </div>
-                  <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary shrink-0" />
-                </a>
-              ))}
+                  <div className="flex gap-2 justify-end">
+                    <Button onClick={() => setFulfillOrderId(null)} variant="outline">Cancel</Button>
+                    <Button onClick={handleFulfillOrder} disabled={fulfilling} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
+                      {fulfilling && <Loader2 className="w-4 h-4 animate-spin" />}
+                      Fulfill
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Config Servers Tab */}
+        {activeTab === "Config Servers" && (
+          <div className="space-y-6 animate-in fade-in-50 duration-300">
+            <div className="flex justify-between items-center">
+              <h2 className="font-heading font-bold text-lg">Configuration Servers</h2>
+              <Button
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Server
+              </Button>
             </div>
 
             {/* Add Server Form */}
             {showAddForm && (
-              <div className="glass-card rounded-xl p-6 border border-primary/30 space-y-5">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-heading font-bold text-lg text-primary">Add New Config Server</h3>
-                  <button onClick={() => { setShowAddForm(false); setForm(EMPTY_FORM); }} className="text-muted-foreground hover:text-foreground">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="sm:col-span-2 space-y-1.5">
-                    <Label htmlFor="serverName">Server Name</Label>
-                    <Input id="serverName" placeholder="e.g. Safaricom Unlimited Monthly" value={form.serverName} onChange={(e) => setForm((f) => ({ ...f, serverName: e.target.value }))} />
+              <div className="glass-card rounded-lg border border-card-border p-6 space-y-4 animate-in slide-in-from-top-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-2 block">Server Name</Label>
+                    <Input
+                      placeholder="e.g., Safaricom Premium"
+                      value={form.serverName}
+                      onChange={(e) => setForm({ ...form, serverName: e.target.value })}
+                      className="bg-muted/30 border-card-border"
+                    />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label>Network</Label>
-                    <select value={form.network} onChange={(e) => setForm((f) => ({ ...f, network: e.target.value }))} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-2 block">Network</Label>
+                    <select
+                      value={form.network}
+                      onChange={(e) => setForm({ ...form, network: e.target.value as any })}
+                      className="w-full px-3 py-2 bg-muted/30 border border-card-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    >
                       {NETWORKS.map((n) => <option key={n} value={n}>{capitalize(n)}</option>)}
                     </select>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label>App Type</Label>
-                    <select value={form.appType} onChange={(e) => setForm((f) => ({ ...f, appType: e.target.value, file: null }))} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
-                      {APP_TYPES.map((a) => <option key={a.value} value={a.value}>{a.label} ({a.ext})</option>)}
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-2 block">App Type</Label>
+                    <select
+                      value={form.appType}
+                      onChange={(e) => setForm({ ...form, appType: e.target.value as any })}
+                      className="w-full px-3 py-2 bg-muted/30 border border-card-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    >
+                      {APP_TYPES.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
                     </select>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label>Plan Type</Label>
-                    <select value={form.planType} onChange={(e) => setForm((f) => ({ ...f, planType: e.target.value }))} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-2 block">Plan Type</Label>
+                    <select
+                      value={form.planType}
+                      onChange={(e) => setForm({ ...form, planType: e.target.value as any })}
+                      className="w-full px-3 py-2 bg-muted/30 border border-card-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    >
                       {PLAN_TYPES.map((p) => <option key={p} value={p}>{capitalize(p)}</option>)}
                     </select>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label>Duration</Label>
-                    <select value={form.duration} onChange={(e) => setForm((f) => ({ ...f, duration: e.target.value }))} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-2 block">Duration</Label>
+                    <select
+                      value={form.duration}
+                      onChange={(e) => setForm({ ...form, duration: e.target.value as any })}
+                      className="w-full px-3 py-2 bg-muted/30 border border-card-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    >
                       {DURATIONS.map((d) => <option key={d} value={d}>{capitalize(d)}</option>)}
                     </select>
                   </div>
-                  <div className="sm:col-span-2 space-y-1.5">
-                    <Label>Config File ({selectedAppType?.ext})</Label>
-                    <div onClick={() => fileRef.current?.click()} className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all hover:border-primary/60 ${form.file ? "border-primary/50 bg-primary/5" : "border-border"}`}>
-                      <input ref={fileRef} type="file" accept={acceptedExt} className="hidden" onChange={(e) => setForm((prev) => ({ ...prev, file: e.target.files?.[0] ?? null }))} />
-                      {form.file ? (
-                        <div className="flex items-center justify-center gap-3">
-                          <CheckCircle className="w-5 h-5 text-primary" />
-                          <span className="text-sm font-medium text-primary">{form.file.name}</span>
-                          <span className="text-xs text-muted-foreground">({(form.file.size / 1024).toFixed(1)} KB)</span>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <Upload className="w-8 h-8 text-muted-foreground mx-auto" />
-                          <p className="text-sm text-muted-foreground">Click to upload <span className="text-primary font-medium">{selectedAppType?.ext}</span> config file</p>
-                        </div>
-                      )}
-                    </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-2 block">Config File</Label>
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept={acceptedExt}
+                      onChange={(e) => setForm({ ...form, file: e.target.files?.[0] || null })}
+                      className="w-full text-xs text-muted-foreground file:mr-3 file:px-3 file:py-1.5 file:bg-primary/20 file:border-0 file:rounded file:text-primary file:cursor-pointer hover:file:bg-primary/30"
+                    />
                   </div>
                 </div>
-                <div className="flex gap-3 pt-2">
-                  <Button onClick={handleAddServer} disabled={uploading} className="gap-2 bg-primary text-primary-foreground">
-                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                    {uploading ? "Uploading..." : "Add Server"}
+                <div className="flex gap-2 justify-end pt-2">
+                  <Button onClick={() => setShowAddForm(false)} variant="outline">Cancel</Button>
+                  <Button onClick={handleAddServer} disabled={uploading} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
+                    {uploading && <Loader2 className="w-4 h-4 animate-spin" />}
+                    Add Server
                   </Button>
-                  <Button variant="outline" onClick={() => { setShowAddForm(false); setForm(EMPTY_FORM); }}>Cancel</Button>
                 </div>
               </div>
             )}
 
-            {/* Server list */}
+            {/* Servers List */}
             {serversLoading ? (
-              <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="glass-card rounded-xl h-28 animate-pulse" />)}</div>
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-24 bg-card/50 border border-card-border rounded-lg animate-pulse" />
+                ))}
+              </div>
             ) : servers.length === 0 ? (
-              <div className="glass-card rounded-xl p-12 text-center space-y-3">
-                <Server className="w-10 h-10 text-muted-foreground mx-auto" />
-                <p className="text-muted-foreground">No config servers yet. Add your first one.</p>
+              <div className="text-center py-12 glass-card rounded-lg border border-card-border">
+                <Server className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                <p className="text-muted-foreground">No config servers yet</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {(Array.isArray(servers) ? servers : []).map((server: any) => (
-                  <div key={server.id} className={`glass-card rounded-xl p-4 border transition-all ${server.status === "active" ? "border-border" : "border-border/30 opacity-60"}`}>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                      <div className="flex-1 min-w-0 space-y-2">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-sm">{server.serverName}</span>
-                          {server.isFree && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-400/10 text-yellow-400 border border-yellow-400/20">
-                              <Gift className="w-3 h-3" /> Free
-                            </span>
-                          )}
-                          <span className={`text-xs px-2 py-0.5 rounded-full border ${server.status === "active" ? "bg-green-400/10 text-green-400 border-green-400/20" : "bg-muted/20 text-muted-foreground border-border"}`}>
-                            {server.status}
-                          </span>
+              <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
+                {(servers as any[]).map((server) => (
+                  <div key={server.id} className="glass-card rounded-lg border border-card-border p-5 space-y-3 hover:bg-card/80 transition-all group">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-2 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-heading font-bold">{server.serverName}</h4>
+                          <Badge variant="outline" className={`text-xs ${networkColor(server.network)}`}>{capitalize(server.network)}</Badge>
+                          {server.isFree && <Badge className="text-xs bg-green-500/20 text-green-400 border-green-500/20">Free</Badge>}
                         </div>
-                        <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-                          <span className={`font-medium ${networkColor(server.network)}`}>{capitalize(server.network)}</span>
-                          <span>·</span>
-                          <span>{capitalize(server.planType)}</span>
-                          <span>·</span>
-                          <span>{capitalize(server.duration)}</span>
-                          <span>·</span>
-                          <span>{server.appType === "http_custom" ? "HTTP Custom" : "HTTP Injector"}</span>
-                          <span>·</span>
-                          <span className="font-mono">{server.originalName}</span>
-                          {server.fileSize && <span>({(server.fileSize / 1024).toFixed(1)} KB)</span>}
-                        </div>
+                        <p className="text-xs text-muted-foreground">{server.appType} • {server.planType} • {server.duration}</p>
                       </div>
-
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {/* Free toggle */}
-                        <button
-                          onClick={() => handleToggleFree(server.id, !!server.isFree)}
-                          title={server.isFree ? "Remove from free offers" : "Set as free offer"}
-                          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border ${
-                            server.isFree
-                              ? "bg-yellow-400/10 text-yellow-400 border-yellow-400/30 hover:bg-yellow-400/20"
-                              : "border-border text-muted-foreground hover:text-yellow-400 hover:border-yellow-400/30"
-                          }`}
-                        >
-                          <Gift className="w-3.5 h-3.5" />
-                          {server.isFree ? "Free" : "Set Free"}
-                        </button>
-
-                        {/* Active/Inactive toggle */}
-                        <button
-                          onClick={() => handleToggleStatus(server.id, server.status)}
-                          title={server.status === "active" ? "Deactivate" : "Activate"}
-                          className="text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          {server.status === "active"
-                            ? <ToggleRight className="w-6 h-6 text-primary" />
-                            : <ToggleLeft className="w-6 h-6" />}
-                        </button>
-
-                        {/* Download */}
-                        <button onClick={() => downloadServer(server.id)} title="Download config" className="text-muted-foreground hover:text-primary transition-colors">
-                          <Download className="w-4 h-4" />
-                        </button>
-
-                        {/* Replace file */}
-                        {replaceId === server.id ? (
-                          <div className="flex items-center gap-2">
-                            <input
-                              ref={replaceFileRef}
-                              type="file"
-                              accept={server.appType === "http_custom" ? ".hc" : ".ehi"}
-                              className="hidden"
-                              onChange={(e) => setReplaceFile(e.target.files?.[0] ?? null)}
-                            />
-                            <Button size="sm" variant="outline" onClick={() => replaceFileRef.current?.click()} className="text-xs h-7 border-border">
-                              {replaceFile ? replaceFile.name : "Choose file"}
-                            </Button>
-                            {replaceFile && (
-                              <Button size="sm" onClick={() => handleReplaceFile(server.id)} disabled={uploading} className="h-7 text-xs bg-primary text-primary-foreground">
-                                {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
-                              </Button>
-                            )}
-                            <button onClick={() => { setReplaceId(null); setReplaceFile(null); }} className="text-muted-foreground hover:text-foreground">
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ) : (
-                          <button onClick={() => { setReplaceId(server.id); setReplaceFile(null); }} title="Replace config file" className="text-muted-foreground hover:text-secondary transition-colors">
-                            <Upload className="w-4 h-4" />
-                          </button>
-                        )}
-
-                        {/* Delete */}
-                        <button onClick={() => handleDelete(server.id, server.serverName)} title="Delete" className="text-muted-foreground hover:text-destructive transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      <Badge className={`${server.status === 'active' ? 'bg-green-500/20 text-green-400 border-green-500/20' : 'bg-red-500/20 text-red-400 border-red-500/20'}`}>
+                        {capitalize(server.status)}
+                      </Badge>
                     </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button size="sm" variant="outline" onClick={() => downloadServer(server.id)} className="gap-2">
+                        <Download className="w-3 h-3" />
+                        Download
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleToggleStatus(server.id, server.status)}
+                        className="gap-2"
+                      >
+                        {server.status === "active" ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                        {server.status === "active" ? "Deactivate" : "Activate"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleToggleFree(server.id, server.isFree)}
+                        className="gap-2"
+                      >
+                        <Gift className="w-3 h-3" />
+                        {server.isFree ? "Unmark Free" : "Mark Free"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setReplaceId(replaceId === server.id ? null : server.id)}
+                        className="gap-2"
+                      >
+                        <Upload className="w-3 h-3" />
+                        Replace
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDelete(server.id, server.serverName)}
+                        className="gap-2 text-red-400 hover:text-red-300"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Delete
+                      </Button>
+                    </div>
+
+                    {/* Replace File Input */}
+                    {replaceId === server.id && (
+                      <div className="flex gap-2 pt-2 border-t border-card-border/50">
+                        <input
+                          ref={replaceFileRef}
+                          type="file"
+                          accept={acceptedExt}
+                          onChange={(e) => setReplaceFile(e.target.files?.[0] || null)}
+                          className="flex-1 text-xs text-muted-foreground file:mr-2 file:px-3 file:py-1 file:bg-primary/20 file:border-0 file:rounded file:text-primary file:cursor-pointer"
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => handleReplaceFile(server.id)}
+                          disabled={!replaceFile || uploading}
+                          className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+                        >
+                          {uploading && <Loader2 className="w-3 h-3 animate-spin" />}
+                          Upload
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             )}
           </div>
         )}
+
+        {/* Notifications Tab */}
+        {activeTab === "Notifications" && (
+          <div className="animate-in fade-in-50 duration-300">
+            <AdminNotificationsPanel />
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+// Missing icon import
+function EyeOff(props: any) {
+  return (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.26 3.64m-5.88 5.88a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
   );
 }

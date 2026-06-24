@@ -157,4 +157,46 @@
   .text-glow-secondary {
     text-shadow: 0 0 10px hsl(var(--secondary) / 0.5);
   }
+  
+  /* SaaS Dashboard Utilities */
+  .stat-card {
+    @apply group relative p-6 rounded-lg border border-border/50 bg-card/30 backdrop-blur-sm transition-all duration-300 hover:border-primary/40 hover:bg-card/50 hover:shadow-lg;
+  }
+  
+  .dashboard-table {
+    @apply space-y-2 max-h-96 overflow-y-auto;
+  }
+  
+  .table-row {
+    @apply glass-card rounded-lg p-4 transition-all hover:bg-card/80 hover:border-primary/30;
+  }
+  
+  /* Animation enhancements */
+  @keyframes slide-in-top {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  .animate-slide-in-top {
+    animation: slide-in-top 0.3s ease-out;
+  }
+  
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
 }
