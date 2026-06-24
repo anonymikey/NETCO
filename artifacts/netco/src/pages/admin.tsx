@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { apiUrl } from "@/lib/api";
+import { AdminLayout } from "@/components/layout/AdminLayout";
 import { AdminNotificationsPanel } from "@/components/admin-notifications-panel";
 
 const NETWORK_COLORS = ["#00F5FF", "#7B61FF", "#0057A8"];
@@ -364,14 +365,14 @@ export default function Admin() {
   const pendingOrders = orders.filter((o) => o.status === "pending").length;
 
   return (
-    <div className="min-h-screen bg-background pt-24 pb-20 px-4 md:px-6">
-      <div className="max-w-7xl mx-auto">
+    <AdminLayout activeTab={activeTab} onTabChange={setActiveTab}>
+      <div className="space-y-8">
         {/* Header Section */}
         <div className="mb-8 space-y-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="space-y-1">
               <h1 className="text-3xl md:text-4xl font-heading font-bold">
-                Admin Dashboard
+                {activeTab}
               </h1>
               <p className="text-muted-foreground text-sm md:text-base">Manage orders, servers, and monitor platform performance</p>
             </div>
@@ -498,9 +499,9 @@ export default function Admin() {
                       ))}
                     </div>
                   </div>
-                )}
-              </div>
-            </div>
+            )}
+          </div>
+        </div>
           </div>
         )}
 
@@ -823,7 +824,7 @@ export default function Admin() {
           </div>
         )}
       </div>
-    </div>
+    </AdminLayout>
   );
 }
 
