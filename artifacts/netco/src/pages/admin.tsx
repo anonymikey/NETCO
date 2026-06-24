@@ -387,12 +387,12 @@ export default function Admin() {
           </div>
 
           {/* Navigation Tabs */}
-          <div className="flex gap-2 p-1.5 bg-card/50 border border-card-border rounded-lg w-fit backdrop-blur-sm">
+          <div className="flex gap-1 md:gap-2 p-1 md:p-1.5 bg-card/50 border border-card-border rounded-lg w-full md:w-fit backdrop-blur-sm overflow-x-auto">
             {TABS.map((tab) => (
               <button
                 key={tab}
                 onClick={() => { setActiveTab(tab); if (tab === "Orders") setNewOrderCount(0); }}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all relative ${
+                className={`px-2 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium transition-all relative whitespace-nowrap flex-shrink-0 md:flex-shrink ${
                   activeTab === tab
                     ? "bg-primary/20 text-primary border border-primary/40"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
@@ -508,31 +508,33 @@ export default function Admin() {
         {activeTab === "Orders" && (
           <div className="space-y-6 animate-in fade-in-50 duration-300">
             {/* Search & Filter */}
-            <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex flex-col gap-2 md:gap-3">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Search by phone, device ID..."
                   value={orderSearch}
                   onChange={(e) => setOrderSearch(e.target.value)}
-                  className="pl-10 bg-card/50 border-card-border"
+                  className="w-full pl-10 bg-card/50 border-card-border text-sm"
                 />
               </div>
-              <select
-                value={orderFilter}
-                onChange={(e) => setOrderFilter(e.target.value)}
-                className="px-4 py-2 bg-card/50 border border-card-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              >
-                <option value="all">All Orders</option>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-                <option value="failed">Failed</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-              <Button onClick={fetchOrders} variant="outline" className="gap-2">
-                <RefreshCw className="w-4 h-4" />
-                Refresh
-              </Button>
+              <div className="flex gap-2 flex-wrap">
+                <select
+                  value={orderFilter}
+                  onChange={(e) => setOrderFilter(e.target.value)}
+                  className="flex-1 min-w-max px-3 py-2 bg-card/50 border border-card-border rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                >
+                  <option value="all">All Orders</option>
+                  <option value="pending">Pending</option>
+                  <option value="completed">Completed</option>
+                  <option value="failed">Failed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+                <Button onClick={fetchOrders} variant="outline" className="gap-2 px-3 py-2 h-auto text-sm">
+                  <RefreshCw className="w-4 h-4" />
+                  <span className="hidden sm:inline">Refresh</span>
+                </Button>
+              </div>
             </div>
 
             {/* Orders Table */}
@@ -629,21 +631,21 @@ export default function Admin() {
         {/* Config Servers Tab */}
         {activeTab === "Config Servers" && (
           <div className="space-y-6 animate-in fade-in-50 duration-300">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-4">
               <h2 className="font-heading font-bold text-lg">Configuration Servers</h2>
               <Button
                 onClick={() => setShowAddForm(!showAddForm)}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 w-full sm:w-auto"
               >
                 <Plus className="w-4 h-4" />
-                Add Server
+                <span className="sm:inline">Add Server</span>
               </Button>
             </div>
 
             {/* Add Server Form */}
             {showAddForm && (
-              <div className="glass-card rounded-lg border border-card-border p-6 space-y-4 animate-in slide-in-from-top-2">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="glass-card rounded-lg border border-card-border p-4 md:p-6 space-y-4 animate-in slide-in-from-top-2 overflow-x-hidden">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                   <div>
                     <Label className="text-xs text-muted-foreground mb-2 block">Server Name</Label>
                     <Input
@@ -727,19 +729,19 @@ export default function Admin() {
                 <p className="text-muted-foreground">No config servers yet</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
+              <div className="space-y-3 max-h-96 overflow-y-auto">
                 {(servers as any[]).map((server) => (
-                  <div key={server.id} className="glass-card rounded-lg border border-card-border p-5 space-y-3 hover:bg-card/80 transition-all group">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-2 flex-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-heading font-bold">{server.serverName}</h4>
+                  <div key={server.id} className="glass-card rounded-lg border border-card-border p-3 md:p-5 space-y-3 hover:bg-card/80 transition-all group">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 md:gap-4">
+                      <div className="space-y-2 flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-heading font-bold text-sm md:text-base truncate">{server.serverName}</h4>
                           <Badge variant="outline" className={`text-xs ${networkColor(server.network)}`}>{capitalize(server.network)}</Badge>
                           {server.isFree && <Badge className="text-xs bg-green-500/20 text-green-400 border-green-500/20">Free</Badge>}
                         </div>
                         <p className="text-xs text-muted-foreground">{server.appType} • {server.planType} • {server.duration}</p>
                       </div>
-                      <Badge className={`${server.status === 'active' ? 'bg-green-500/20 text-green-400 border-green-500/20' : 'bg-red-500/20 text-red-400 border-red-500/20'}`}>
+                      <Badge className={`w-fit ${server.status === 'active' ? 'bg-green-500/20 text-green-400 border-green-500/20' : 'bg-red-500/20 text-red-400 border-red-500/20'}`}>
                         {capitalize(server.status)}
                       </Badge>
                     </div>

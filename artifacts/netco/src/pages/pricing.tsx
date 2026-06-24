@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const FAQS = [
   { q: "What apps do I need?", a: "You need HTTP Custom (for .hc files) or HTTP Injector (for .ehi files). Both are free on the Google Play Store." },
+  { q: "What is a Device ID and HWID?", a: "Device ID is used for HTTP Custom (format: C4E61860CA87C6CB24C9C56BE3312E6J). HWID is for HTTP Injector (format: 0979c85da5eef2f998334156cb53edf6). You'll find these in your app settings." },
   { q: "How is the config delivered?", a: "After successful payment, your config file is sent automatically. It is device-locked to the Device ID or HWID you provide." },
   { q: "Can I share my config?", a: "No. Configs are locked to one specific device. Sharing will cause the config to stop working on both devices." },
   { q: "What networks are supported?", a: "We support Safaricom, Airtel, and Telkom Kenya. Make sure to buy the config for your active SIM network." },

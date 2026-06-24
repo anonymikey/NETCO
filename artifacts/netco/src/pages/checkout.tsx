@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { CredentialsDisplay } from "@/components/credentials-display";
 import {
   useCreateOrder,
   useInitiatePayment,
@@ -259,6 +260,8 @@ export default function Checkout() {
                 ? "Open the app → Menu → Device ID (copy the long alphanumeric string)"
                 : "Open app → Config → Export → find your HWID at the top"}
             </div>
+
+            <CredentialsDisplay appType={appType} />
 
             <div className="space-y-2">
               <Label htmlFor="deviceId">Your {appType === "http_custom" ? "Device ID" : "HWID"}</Label>
