@@ -139,6 +139,10 @@ export default function Admin() {
   const [fulfillInstructions, setFulfillInstructions] = useState("");
   const [fulfilling, setFulfilling] = useState(false);
 
+  // Users Management
+  const [userSearch, setUserSearch] = useState("");
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+
   const fetchOrders = useCallback(async () => {
     setOrdersLoading(true);
     try {
@@ -641,11 +645,12 @@ export default function Admin() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <div className="space-y-1">
+                          <div className="space-y-1 flex-1 min-w-0">
                             <p className="text-sm font-medium text-primary">{order.phone}</p>
-                            <p className="text-xs text-muted-foreground">{order.deviceId}</p>
+                            <p className="text-xs text-muted-foreground truncate">{order.deviceId}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Customer • Network: {capitalize(order.network)}</p>
                           </div>
-                          <Badge className={`${statusColor(order.status)}`}>{capitalize(order.status)}</Badge>
+                          <Badge className={`${statusColor(order.status)} flex-shrink-0 ml-2`}>{capitalize(order.status)}</Badge>
                         </div>
                         <div className="flex gap-2 flex-wrap">
                           <Badge variant="outline" className={`text-xs ${networkColor(order.network)}`}>{capitalize(order.network)}</Badge>
@@ -654,7 +659,7 @@ export default function Admin() {
                       </div>
                       <div className="flex items-center justify-between md:flex-col md:items-end md:justify-between gap-2">
                         <div className="text-right">
-                          <p className="text-lg font-bold text-green-400">Ksh {order.amount}</p>
+                          <p className="text-lg font-bold text-green-400">Ksh {order.amount.toLocaleString()}</p>
                           <p className="text-xs text-muted-foreground">{timeAgo(order.createdAt)}</p>
                         </div>
                         {order.status === "pending" && (
@@ -937,14 +942,36 @@ export default function Admin() {
                 />
               </div>
 
-              <div className="flex items-center justify-center py-12 text-center">
-                <div className="space-y-3">
-                  <Users className="w-12 h-12 text-muted-foreground mx-auto opacity-50" />
-                  <div>
-                    <p className="text-muted-foreground font-medium">User management system</p>
-                    <p className="text-xs text-muted-foreground mt-1">User listing, search, and details coming soon</p>
-                  </div>
-                </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-card-border">
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Username</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Email</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Phone</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">User ID</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Role</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Joined</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Orders</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Total Spent</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-card-border hover:bg-muted/10 transition-colors">
+                      <td colSpan={10}>
+                        <div className="flex items-center justify-center py-12">
+                          <div className="space-y-3 text-center">
+                            <Users className="w-12 h-12 text-muted-foreground mx-auto opacity-50" />
+                            <p className="text-muted-foreground font-medium">No users found</p>
+                            <p className="text-xs text-muted-foreground">Users will appear here as they register</p>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
