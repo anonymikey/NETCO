@@ -185,6 +185,20 @@ export default function Admin() {
     };
   }, [toast]);
 
+  // Auto-refresh dashboard data every 30 seconds
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      if (activeTab === "Dashboard") {
+        // Invalidate stats cache to refresh data
+        queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
+      } else if (activeTab === "Orders") {
+        fetchOrders();
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(refreshInterval);
+  }, [activeTab, queryClient, fetchOrders]);
+
   const handleFulfillOrder = async () => {
     if (!fulfillOrderId) return;
     setFulfilling(true);
@@ -478,6 +492,98 @@ export default function Admin() {
                     </div>
                   </div>
             )}
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <button className="glass-card rounded-lg p-5 space-y-3 border transition-all hover:border-primary/40 hover:bg-card/80 text-left group">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10 group-hover:scale-110 transition-transform">
+                  <Plus className="w-5 h-5 text-primary" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Quick Action</p>
+                  <p className="font-heading font-bold text-sm">Add Config Server</p>
+                </div>
+              </button>
+
+              <button onClick={() => setActiveTab("Orders")} className="glass-card rounded-lg p-5 space-y-3 border transition-all hover:border-primary/40 hover:bg-card/80 text-left group">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-green-400/10 group-hover:scale-110 transition-transform">
+                  <ShoppingCart className="w-5 h-5 text-green-400" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Quick Action</p>
+                  <p className="font-heading font-bold text-sm">View Orders</p>
+                </div>
+              </button>
+
+              <button className="glass-card rounded-lg p-5 space-y-3 border transition-all hover:border-primary/40 hover:bg-card/80 text-left group">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-yellow-400/10 group-hover:scale-110 transition-transform">
+                  <Bell className="w-5 h-5 text-yellow-400" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Quick Action</p>
+                  <p className="font-heading font-bold text-sm">Send Notification</p>
+                </div>
+              </button>
+
+              <button onClick={() => setActiveTab("Users")} className="glass-card rounded-lg p-5 space-y-3 border transition-all hover:border-primary/40 hover:bg-card/80 text-left group">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-secondary/10 group-hover:scale-110 transition-transform">
+                  <Users className="w-5 h-5 text-secondary" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Quick Action</p>
+                  <p className="font-heading font-bold text-sm">Manage Users</p>
+                </div>
+              </button>
+            </div>
+
+            {/* Recent Activity */}
+            <div className="glass-card rounded-lg p-6 space-y-4 border border-card-border">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-primary" />
+                  <h3 className="font-heading font-bold text-lg">Recent Activity</h3>
+                </div>
+                <span className="text-xs text-muted-foreground">Last 5 items</span>
+              </div>
+              
+              {orders.length === 0 && !ordersLoading ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Activity className="w-12 h-12 text-muted-foreground/30 mb-3" />
+                  <p className="text-muted-foreground text-sm">No recent activity</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">Orders will appear here as they are placed</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {orders.slice(0, 5).map((order) => (
+                    <div key={order.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/20 border border-muted/20 hover:border-primary/20 transition-all">
+                      <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
+                        order.status === "completed" ? "bg-green-400" :
+                        order.status === "pending" ? "bg-yellow-400" :
+                        order.status === "failed" ? "bg-red-400" : "bg-gray-400"
+                      }`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-medium truncate">{order.phone}</p>
+                          <Badge variant="outline" className="text-xs">{capitalize(order.network)}</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">{capitalize(order.duration)} • Ksh {order.amount.toLocaleString()}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <Badge className={`text-xs ${
+                          order.status === "completed" ? "bg-green-500/20 text-green-400 border-green-500/20" :
+                          order.status === "pending" ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/20" :
+                          order.status === "failed" ? "bg-red-500/20 text-red-400 border-red-500/20" : 
+                          "bg-muted/10 text-muted-foreground border-muted/20"
+                        }`}>
+                          {capitalize(order.status)}
+                        </Badge>
+                        <p className="text-xs text-muted-foreground mt-1">{timeAgo(order.createdAt)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
           </div>

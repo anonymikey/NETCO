@@ -34,20 +34,20 @@ export function validateHTTPCustomHWID(hwid: string): ValidationResult {
 /**
  * HTTP Injector: Device ID Format
  * Requirements:
- * - Exactly 33 uppercase alphanumeric characters
- * - Pattern: ^[A-Z0-9]{33}$
- * Example: C4E61860CA87C6CB24C9C56BE3312E6J
+ * - Exactly 32 uppercase alphanumeric characters
+ * - Pattern: ^[A-Z0-9]{32}$
+ * Example: C4E61860CA87C6CB24C9C56BE3312E6
  */
 export function validateHTTPInjectorDeviceID(deviceId: string): ValidationResult {
   if (!deviceId) {
     return { isValid: false, error: "Device ID is required" };
   }
 
-  const pattern = /^[A-Z0-9]{33}$/;
+  const pattern = /^[A-Z0-9]{32}$/;
   if (!pattern.test(deviceId)) {
     return {
       isValid: false,
-      error: "Invalid Device ID format. Must be exactly 33 uppercase alphanumeric characters (A-Z, 0-9)",
+      error: "Invalid Device ID format. Must be exactly 32 uppercase alphanumeric characters (A-Z, 0-9)",
     };
   }
 
@@ -82,6 +82,6 @@ export function getCredentialFormat(appType: "http_custom" | "http_injector"): s
   if (appType === "http_custom") {
     return "32 lowercase hexadecimal characters (0-9, a-f)";
   } else {
-    return "33 uppercase alphanumeric characters (A-Z, 0-9)";
+    return "32 uppercase alphanumeric characters (A-Z, 0-9)";
   }
 }
