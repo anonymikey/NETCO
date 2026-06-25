@@ -8,6 +8,7 @@ interface AuthContextValue {
   isAdminUser: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextValue>({
   isAdminUser: false,
   loading: true,
   signOut: async () => {},
+  logout: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -40,10 +42,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const logout = async () => {
+    await supabase.auth.signOut();
+  };
+
   const user = session?.user ?? null;
 
   return (
-    <AuthContext.Provider value={{ session, user, isAdminUser: isAdmin(user?.email), loading, signOut }}>
+    <AuthContext.Provider value={{ session, user, isAdminUser: isAdmin(user?.email), loading, signOut, logout }}>
       {children}
     </AuthContext.Provider>
   );
