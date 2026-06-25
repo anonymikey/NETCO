@@ -16,7 +16,7 @@ import {
   Download, ToggleLeft, ToggleRight, Upload, X, CheckCircle, AlertCircle,
   Loader2, Smartphone, ExternalLink, Gift, Bell, Eye, Zap, Search,
   Filter, RefreshCw, ChevronDown, Check, Clock, XCircle, Package,
-  Activity, ArrowUpRight, ArrowDownRight, Zap as ZapIcon,
+  Activity, ArrowUpRight, ArrowDownRight, Zap as ZapIcon, Shield, Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,7 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { AdminNotificationsPanel } from "@/components/admin-notifications-panel";
 
 const NETWORK_COLORS = ["#00F5FF", "#7B61FF", "#0057A8"];
-const TABS = ["Dashboard", "Orders", "Config Servers", "Notifications"] as const;
+const TABS = ["Dashboard", "Orders", "Config Servers", "Notifications", "Users", "Settings"] as const;
 type Tab = typeof TABS[number];
 
 const NETWORKS = ["safaricom", "airtel", "telkom"] as const;
@@ -917,6 +917,96 @@ export default function Admin() {
         {activeTab === "Notifications" && (
           <div className="animate-in fade-in-50 duration-300">
             <AdminNotificationsPanel />
+          </div>
+        )}
+
+        {/* Users Tab */}
+        {activeTab === "Users" && (
+          <div className="animate-in fade-in-50 duration-300 space-y-6">
+            <div className="space-y-2">
+              <h2 className="font-heading font-bold text-2xl">User Management</h2>
+              <p className="text-muted-foreground">Manage registered users and their accounts</p>
+            </div>
+
+            <div className="glass-card rounded-lg p-6 space-y-4 border border-card-border">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by username, email, user ID, or phone..."
+                  className="pl-10 bg-card/50 border-card-border"
+                />
+              </div>
+
+              <div className="flex items-center justify-center py-12 text-center">
+                <div className="space-y-3">
+                  <Users className="w-12 h-12 text-muted-foreground mx-auto opacity-50" />
+                  <div>
+                    <p className="text-muted-foreground font-medium">User management system</p>
+                    <p className="text-xs text-muted-foreground mt-1">User listing, search, and details coming soon</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === "Settings" && (
+          <div className="animate-in fade-in-50 duration-300 space-y-6">
+            <div className="space-y-2">
+              <h2 className="font-heading font-bold text-2xl">Settings</h2>
+              <p className="text-muted-foreground">Manage admin account and system preferences</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Profile Settings */}
+              <div className="glass-card rounded-lg p-6 space-y-4 border border-card-border">
+                <h3 className="font-heading font-bold flex items-center gap-2">
+                  <Users className="w-5 h-5 text-primary" />
+                  Profile
+                </h3>
+                <div className="space-y-3 py-4 text-center">
+                  <p className="text-sm text-muted-foreground">Admin profile settings</p>
+                  <p className="text-xs text-muted-foreground">Coming soon</p>
+                </div>
+              </div>
+
+              {/* Security Settings */}
+              <div className="glass-card rounded-lg p-6 space-y-4 border border-card-border">
+                <h3 className="font-heading font-bold flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-primary" />
+                  Security
+                </h3>
+                <div className="space-y-3 py-4 text-center">
+                  <p className="text-sm text-muted-foreground">Change password and security settings</p>
+                  <p className="text-xs text-muted-foreground">Coming soon</p>
+                </div>
+              </div>
+
+              {/* Notification Settings */}
+              <div className="glass-card rounded-lg p-6 space-y-4 border border-card-border">
+                <h3 className="font-heading font-bold flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-primary" />
+                  Notifications
+                </h3>
+                <div className="space-y-3 py-4 text-center">
+                  <p className="text-sm text-muted-foreground">Manage notification preferences</p>
+                  <p className="text-xs text-muted-foreground">Coming soon</p>
+                </div>
+              </div>
+
+              {/* System Settings */}
+              <div className="glass-card rounded-lg p-6 space-y-4 border border-card-border">
+                <h3 className="font-heading font-bold flex items-center gap-2">
+                  <Settings className="w-5 h-5 text-primary" />
+                  System
+                </h3>
+                <div className="space-y-3 py-4 text-center">
+                  <p className="text-sm text-muted-foreground">System configuration and preferences</p>
+                  <p className="text-xs text-muted-foreground">Coming soon</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
