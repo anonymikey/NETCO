@@ -681,13 +681,25 @@ export default function Admin() {
                   <h3 className="font-heading font-bold text-lg">Fulfill Order</h3>
                   <div className="space-y-3">
                     <div>
-                      <Label className="text-xs text-muted-foreground mb-1 block">Config Server ID</Label>
-                      <Input
-                        placeholder="Leave empty if N/A"
-                        value={fulfillServerId}
-                        onChange={(e) => setFulfillServerId(e.target.value)}
-                        className="bg-muted/30 border-card-border"
-                      />
+                      <Label className="text-xs text-muted-foreground mb-1 block">Configuration Server</Label>
+                      {servers.length === 0 ? (
+                        <div className="w-full px-3 py-2 bg-muted/30 border border-card-border rounded-lg text-muted-foreground text-sm flex items-center justify-center h-10">
+                          No configuration servers available.
+                        </div>
+                      ) : (
+                        <select
+                          value={fulfillServerId}
+                          onChange={(e) => setFulfillServerId(e.target.value)}
+                          className="w-full px-3 py-2 bg-muted/30 border border-card-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer"
+                        >
+                          <option value="">Select a server...</option>
+                          {servers.map((server: any) => (
+                            <option key={server.id} value={server.id}>
+                              {server.serverName} • {server.appType === "http_custom" ? "HTTP Custom" : "HTTP Injector"} • {capitalize(server.network)}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground mb-1 block">Setup Instructions</Label>
@@ -702,7 +714,7 @@ export default function Admin() {
                   </div>
                   <div className="flex gap-2 justify-end">
                     <Button onClick={() => setFulfillOrderId(null)} variant="outline">Cancel</Button>
-                    <Button onClick={handleFulfillOrder} disabled={fulfilling} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
+                    <Button onClick={handleFulfillOrder} disabled={fulfilling || servers.length === 0} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
                       {fulfilling && <Loader2 className="w-4 h-4 animate-spin" />}
                       Fulfill
                     </Button>
