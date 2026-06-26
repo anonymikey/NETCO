@@ -40,6 +40,13 @@ export function AdminNotificationsPanel() {
   const [usersType, setUsersType] = useState<NotificationType>("info");
   const [userIds, setUserIds] = useState("");
 
+  // Mock users data - replace with API call
+  const mockUsers = [
+    { id: "user-1", username: "john_doe", email: "john@example.com" },
+    { id: "user-2", username: "jane_smith", email: "jane@example.com" },
+    { id: "user-3", username: "bob_johnson", email: "bob@example.com" },
+  ];
+
   const handleBroadcast = async () => {
     if (!broadcastTitle.trim() || !broadcastMessage.trim()) {
       toast({ title: "Error", description: "Please fill in all fields", variant: "destructive" });
@@ -192,10 +199,14 @@ export function AdminNotificationsPanel() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">Select a user</SelectItem>
-                    <SelectItem value="demo">Demo User (Coming Soon)</SelectItem>
+                    {mockUsers.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.username} ({user.email})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-gray-500">Users are automatically populated from registered accounts</p>
+                <p className="text-xs text-muted-foreground">Users are automatically populated from registered accounts</p>
               </div>
 
               <div className="space-y-2">
