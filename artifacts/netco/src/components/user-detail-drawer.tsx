@@ -1,10 +1,11 @@
 import { useState } from "react";
 import {
   X, Mail, Phone, MapPin, Shield, Clock, CheckCircle, AlertCircle,
-  Smartphone, Globe, Calendar, Send, ShoppingCart, Eye,
+  Smartphone, Globe, Calendar, Send, ShoppingCart, Eye, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useUserDevices, useUserLoginHistory, useUserPlans } from "@/hooks/useAdminUsers";
 
 interface UserDetailDrawerProps {
   user: any;
@@ -15,23 +16,11 @@ interface UserDetailDrawerProps {
 
 export function UserDetailDrawer({ user, isOpen, onClose, onSendNotification }: UserDetailDrawerProps) {
   const [activeTab, setActiveTab] = useState<"profile" | "devices" | "history" | "plans">("profile");
-
-  if (!isOpen || !user) return null;
-
-  // Mock data for demonstration - replace with real API calls
-  const devices = [
-    { name: "iPhone 13", browser: "Safari", os: "iOS 16", lastActive: "2 hours ago" },
-    { name: "Desktop", browser: "Chrome", os: "Windows 11", lastActive: "1 day ago" },
-  ];
-
-  const loginHistory = [
-    { browser: "Safari", device: "iPhone", status: "success", date: "2 hours ago" },
-    { browser: "Chrome", device: "Desktop", status: "success", date: "1 day ago" },
-  ];
-
-  const plans = [
-    { name: "Safaricom Monthly", network: "safaricom", expiry: "2024-07-26", status: "active" },
-  ];
+  
+  // Fetch real data from Supabase
+  const { devices, loading: devicesLoading } = useUserDevices(user?.id);
+  const { history: loginHistory, loading: historyLoading } = useUserLoginHistory(user?.id);
+  const { plans, loading: plansLoading } = useUserPlans(user?.id);
 
   return (
     <>
@@ -85,15 +74,27 @@ export function UserDetailDrawer({ user, isOpen, onClose, onSendNotification }: 
             <div className="space-y-2">
               <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg border border-muted/20">
                 <span className="text-sm">Email Verified</span>
-                <CheckCircle className="w-5 h-5 text-green-400" />
+                {user.emailVerified ? (
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-yellow-400" />
+                )}
               </div>
               <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg border border-muted/20">
                 <span className="text-sm">Phone Verified</span>
-                <CheckCircle className="w-5 h-5 text-green-400" />
+                {user.phoneVerified ? (
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-yellow-400" />
+                )}
               </div>
               <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg border border-muted/20">
                 <span className="text-sm">Two Factor Authentication</span>
-                <AlertCircle className="w-5 h-5 text-yellow-400" />
+                {user.twoFactorEnabled ? (
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-yellow-400" />
+                )}
               </div>
             </div>
           </div>
@@ -142,62 +143,96 @@ export function UserDetailDrawer({ user, isOpen, onClose, onSendNotification }: 
             {/* Devices Tab */}
             {activeTab === "devices" && (
               <div className="space-y-2">
-                {devices.map((device, idx) => (
-                  <div key={idx} className="p-3 bg-muted/10 rounded-lg border border-muted/20">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Smartphone className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm font-medium">{device.name}</p>
-                          <p className="text-xs text-muted-foreground">{device.browser} • {device.os}</p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground">{device.lastActive}</p>
-                    </div>
+                {devicesLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   </div>
-                ))}
+                ) : devices.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Smartphone className="w-8 h-8 text-muted-foreground mx-auto opacity-50 mb-2" />
+                    <p className="text-sm text-muted-foreground">No devices found</p>
+                  </div>
+                ) : (
+                  devices.map((device) => (
+                    <div key={device.id} className="p-3 bg-muted/10 rounded-lg border border-muted/20">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Smartphone className="w-4 h-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm font-medium">{device.name}</p>
+                            <p className="text-xs text-muted-foreground">{device.browser} • {device.os}</p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{device.lastActive}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             )}
 
             {/* Login History Tab */}
             {activeTab === "history" && (
               <div className="space-y-2">
-                {loginHistory.map((login, idx) => (
-                  <div key={idx} className="p-3 bg-muted/10 rounded-lg border border-muted/20">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Globe className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm font-medium">{login.browser} • {login.device}</p>
-                          <p className="text-xs text-muted-foreground">{login.date}</p>
-                        </div>
-                      </div>
-                      <Badge className={login.status === "success" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}>
-                        {login.status}
-                      </Badge>
-                    </div>
+                {historyLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   </div>
-                ))}
+                ) : loginHistory.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Clock className="w-8 h-8 text-muted-foreground mx-auto opacity-50 mb-2" />
+                    <p className="text-sm text-muted-foreground">No login history</p>
+                  </div>
+                ) : (
+                  loginHistory.map((login) => (
+                    <div key={login.id} className="p-3 bg-muted/10 rounded-lg border border-muted/20">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Globe className="w-4 h-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm font-medium">{login.browser} • {login.device}</p>
+                            <p className="text-xs text-muted-foreground">{login.date}</p>
+                            {login.ipAddress && <p className="text-xs text-muted-foreground">IP: {login.ipAddress}</p>}
+                          </div>
+                        </div>
+                        <Badge className={login.status === "success" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}>
+                          {login.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             )}
 
             {/* Plans Tab */}
             {activeTab === "plans" && (
               <div className="space-y-2">
-                {plans.map((plan, idx) => (
-                  <div key={idx} className="p-3 bg-muted/10 rounded-lg border border-muted/20">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium">{plan.name}</p>
-                      <Badge className={plan.status === "active" ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-400"}>
-                        {plan.status}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{plan.network}</span>
-                      <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {plan.expiry}</span>
-                    </div>
+                {plansLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   </div>
-                ))}
+                ) : plans.length === 0 ? (
+                  <div className="text-center py-8">
+                    <ShoppingCart className="w-8 h-8 text-muted-foreground mx-auto opacity-50 mb-2" />
+                    <p className="text-sm text-muted-foreground">No active plans</p>
+                  </div>
+                ) : (
+                  plans.map((plan) => (
+                    <div key={plan.id} className="p-3 bg-muted/10 rounded-lg border border-muted/20">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium">{plan.name}</p>
+                        <Badge className={plan.status === "active" ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-400"}>
+                          {plan.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span className="capitalize">{plan.network}</span>
+                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {plan.expiryDate}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </div>
