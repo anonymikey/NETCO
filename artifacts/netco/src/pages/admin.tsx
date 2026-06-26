@@ -27,6 +27,7 @@ import { supabase } from "@/lib/supabase";
 import { apiUrl } from "@/lib/api";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { AdminNotificationsPanel } from "@/components/admin-notifications-panel";
+import { UserDetailDrawer } from "@/components/user-detail-drawer";
 
 const NETWORK_COLORS = ["#00F5FF", "#7B61FF", "#0057A8"];
 const TABS = ["Dashboard", "Orders", "Config Servers", "Notifications", "Users", "Settings"] as const;
@@ -138,6 +139,51 @@ export default function Admin() {
   const [fulfillServerId, setFulfillServerId] = useState("");
   const [fulfillInstructions, setFulfillInstructions] = useState("");
   const [fulfilling, setFulfilling] = useState(false);
+
+  // Users Management
+  const [userSearch, setUserSearch] = useState("");
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [showUserDrawer, setShowUserDrawer] = useState(false);
+
+  // Mock users data - replace with API call
+  const mockUsers = [
+    {
+      id: "user-1",
+      username: "john_doe",
+      email: "john@example.com",
+      phone: "+254712345678",
+      country: "Kenya",
+      ordersCount: 5,
+      activePlansCount: 1,
+      totalSpent: 3500,
+      notificationsCount: 12,
+      status: "active",
+      joinDate: "2024-01-15",
+      fullName: "John Doe",
+    },
+    {
+      id: "user-2",
+      username: "jane_smith",
+      email: "jane@example.com",
+      phone: "+254798765432",
+      country: "Kenya",
+      ordersCount: 8,
+      activePlansCount: 2,
+      totalSpent: 7200,
+      notificationsCount: 24,
+      status: "active",
+      joinDate: "2023-11-20",
+      fullName: "Jane Smith",
+    },
+  ];
+
+  const filteredUsers = mockUsers.filter((u) =>
+    userSearch.toLowerCase() === "" ||
+    u.username.toLowerCase().includes(userSearch.toLowerCase()) ||
+    u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
+    u.phone.includes(userSearch) ||
+    u.country.toLowerCase().includes(userSearch.toLowerCase())
+  );
 
   const fetchOrders = useCallback(async () => {
     setOrdersLoading(true);
@@ -641,11 +687,12 @@ export default function Admin() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <div className="space-y-1">
+                          <div className="space-y-1 flex-1 min-w-0">
                             <p className="text-sm font-medium text-primary">{order.phone}</p>
-                            <p className="text-xs text-muted-foreground">{order.deviceId}</p>
+                            <p className="text-xs text-muted-foreground truncate">{order.deviceId}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Customer • Network: {capitalize(order.network)}</p>
                           </div>
-                          <Badge className={`${statusColor(order.status)}`}>{capitalize(order.status)}</Badge>
+                          <Badge className={`${statusColor(order.status)} flex-shrink-0 ml-2`}>{capitalize(order.status)}</Badge>
                         </div>
                         <div className="flex gap-2 flex-wrap">
                           <Badge variant="outline" className={`text-xs ${networkColor(order.network)}`}>{capitalize(order.network)}</Badge>
@@ -654,7 +701,7 @@ export default function Admin() {
                       </div>
                       <div className="flex items-center justify-between md:flex-col md:items-end md:justify-between gap-2">
                         <div className="text-right">
-                          <p className="text-lg font-bold text-green-400">Ksh {order.amount}</p>
+                          <p className="text-lg font-bold text-green-400">Ksh {order.amount.toLocaleString()}</p>
                           <p className="text-xs text-muted-foreground">{timeAgo(order.createdAt)}</p>
                         </div>
                         {order.status === "pending" && (
@@ -932,23 +979,92 @@ export default function Admin() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by username, email, user ID, or phone..."
+                  placeholder="Search by username, email, phone, or country..."
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
                   className="pl-10 bg-card/50 border-card-border"
                 />
               </div>
 
-              <div className="flex items-center justify-center py-12 text-center">
-                <div className="space-y-3">
-                  <Users className="w-12 h-12 text-muted-foreground mx-auto opacity-50" />
-                  <div>
-                    <p className="text-muted-foreground font-medium">User management system</p>
-                    <p className="text-xs text-muted-foreground mt-1">User listing, search, and details coming soon</p>
-                  </div>
-                </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-card-border">
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Avatar</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Username</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Email</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Phone</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Country</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Orders</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Active Plans</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Join Date</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredUsers.length === 0 ? (
+                      <tr className="border-b border-card-border">
+                        <td colSpan={10}>
+                          <div className="flex items-center justify-center py-12">
+                            <div className="space-y-3 text-center">
+                              <Users className="w-12 h-12 text-muted-foreground mx-auto opacity-50" />
+                              <p className="text-muted-foreground font-medium">No users found</p>
+                              <p className="text-xs text-muted-foreground">Try adjusting your search criteria</p>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredUsers.map((user) => (
+                        <tr key={user.id} className="border-b border-card-border hover:bg-muted/10 transition-colors">
+                          <td className="py-3 px-4">
+                            <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/50 rounded-lg flex items-center justify-center text-xs font-bold">
+                              {user.username[0].toUpperCase()}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 font-medium">@{user.username}</td>
+                          <td className="py-3 px-4 text-muted-foreground">{user.email}</td>
+                          <td className="py-3 px-4 text-muted-foreground">{user.phone}</td>
+                          <td className="py-3 px-4 text-muted-foreground">{user.country}</td>
+                          <td className="py-3 px-4 text-center">{user.ordersCount}</td>
+                          <td className="py-3 px-4 text-center">{user.activePlansCount}</td>
+                          <td className="py-3 px-4">
+                            <Badge className="bg-green-500/20 text-green-400">Active</Badge>
+                          </td>
+                          <td className="py-3 px-4 text-muted-foreground text-xs">{user.joinDate}</td>
+                          <td className="py-3 px-4">
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setShowUserDrawer(true);
+                              }}
+                              className="bg-primary/20 hover:bg-primary/30 text-primary text-xs"
+                            >
+                              View
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
         )}
+
+        {/* User Detail Drawer */}
+        <UserDetailDrawer
+          user={selectedUser}
+          isOpen={showUserDrawer}
+          onClose={() => setShowUserDrawer(false)}
+          onSendNotification={(userId) => {
+            toast({ title: "Success", description: "Notification sent to user" });
+            setShowUserDrawer(false);
+          }}
+        />
 
         {/* Settings Tab */}
         {activeTab === "Settings" && (

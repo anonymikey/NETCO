@@ -40,6 +40,13 @@ export function AdminNotificationsPanel() {
   const [usersType, setUsersType] = useState<NotificationType>("info");
   const [userIds, setUserIds] = useState("");
 
+  // Mock users data - replace with API call
+  const mockUsers = [
+    { id: "user-1", username: "john_doe", email: "john@example.com" },
+    { id: "user-2", username: "jane_smith", email: "jane@example.com" },
+    { id: "user-3", username: "bob_johnson", email: "bob@example.com" },
+  ];
+
   const handleBroadcast = async () => {
     if (!broadcastTitle.trim() || !broadcastMessage.trim()) {
       toast({ title: "Error", description: "Please fill in all fields", variant: "destructive" });
@@ -181,17 +188,25 @@ export function AdminNotificationsPanel() {
           <Card>
             <CardHeader>
               <CardTitle>Send to Specific User</CardTitle>
-              <CardDescription>Send a notification to a single user</CardDescription>
+              <CardDescription>Select a user and send them a notification</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="user-id">User ID</Label>
-                <Input
-                  id="user-id"
-                  placeholder="Enter user ID"
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                />
+                <Label htmlFor="user-select">Select User</Label>
+                <Select value={userId} onValueChange={setUserId}>
+                  <SelectTrigger id="user-select">
+                    <SelectValue placeholder="Choose a user..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Select a user</SelectItem>
+                    {mockUsers.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.username} ({user.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Users are automatically populated from registered accounts</p>
               </div>
 
               <div className="space-y-2">
@@ -259,18 +274,27 @@ export function AdminNotificationsPanel() {
           <Card>
             <CardHeader>
               <CardTitle>Send to Multiple Users</CardTitle>
-              <CardDescription>Send a notification to multiple users (comma-separated IDs)</CardDescription>
+              <CardDescription>Select multiple users or broadcast to all</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="users-ids">User IDs (comma-separated)</Label>
-                <Textarea
-                  id="users-ids"
-                  placeholder="user-id-1, user-id-2, user-id-3"
-                  value={userIds}
-                  onChange={(e) => setUserIds(e.target.value)}
-                  rows={3}
-                />
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50" onClick={() => setUserIds("all")}>
+                  <input type="checkbox" checked={userIds === "all"} onChange={() => {}} className="w-4 h-4" />
+                  <div>
+                    <p className="font-medium text-sm">Send to All Users</p>
+                    <p className="text-xs text-gray-500">Broadcast to every registered user</p>
+                  </div>
+                </div>
+                <div className="border-t pt-3">
+                  <Label className="text-sm mb-2 block">Or select specific users</Label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded">
+                      <input type="checkbox" className="w-4 h-4" />
+                      <p className="text-sm">Demo User (Coming Soon)</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">Users are loaded from your registered accounts</p>
+                </div>
               </div>
 
               <div className="space-y-2">
