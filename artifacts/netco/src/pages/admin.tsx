@@ -28,6 +28,7 @@ import { apiUrl } from "@/lib/api";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { AdminNotificationsPanel } from "@/components/admin-notifications-panel";
 import { UserDetailDrawer } from "@/components/user-detail-drawer";
+import { useAdminUsers } from "@/hooks/useAdminUsers";
 
 const NETWORK_COLORS = ["#00F5FF", "#7B61FF", "#0057A8"];
 const TABS = ["Dashboard", "Orders", "Config Servers", "Notifications", "Users", "Settings"] as const;
@@ -145,39 +146,10 @@ export default function Admin() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [showUserDrawer, setShowUserDrawer] = useState(false);
 
-  // Mock users data - replace with API call
-  const mockUsers = [
-    {
-      id: "user-1",
-      username: "john_doe",
-      email: "john@example.com",
-      phone: "+254712345678",
-      country: "Kenya",
-      ordersCount: 5,
-      activePlansCount: 1,
-      totalSpent: 3500,
-      notificationsCount: 12,
-      status: "active",
-      joinDate: "2024-01-15",
-      fullName: "John Doe",
-    },
-    {
-      id: "user-2",
-      username: "jane_smith",
-      email: "jane@example.com",
-      phone: "+254798765432",
-      country: "Kenya",
-      ordersCount: 8,
-      activePlansCount: 2,
-      totalSpent: 7200,
-      notificationsCount: 24,
-      status: "active",
-      joinDate: "2023-11-20",
-      fullName: "Jane Smith",
-    },
-  ];
+  // Fetch real users from Supabase
+  const { users, loading: usersLoading } = useAdminUsers();
 
-  const filteredUsers = mockUsers.filter((u) =>
+  const filteredUsers = users.filter((u) =>
     userSearch.toLowerCase() === "" ||
     u.username.toLowerCase().includes(userSearch.toLowerCase()) ||
     u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
@@ -1003,7 +975,15 @@ export default function Admin() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredUsers.length === 0 ? (
+                    {usersLoading ? (
+                      <tr className="border-b border-card-border">
+                        <td colSpan={10}>
+                          <div className="flex items-center justify-center py-12">
+                            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                          </div>
+                        </td>
+                      </tr>
+                    ) : filteredUsers.length === 0 ? (
                       <tr className="border-b border-card-border">
                         <td colSpan={10}>
                           <div className="flex items-center justify-center py-12">
@@ -1030,7 +1010,9 @@ export default function Admin() {
                           <td className="py-3 px-4 text-center">{user.ordersCount}</td>
                           <td className="py-3 px-4 text-center">{user.activePlansCount}</td>
                           <td className="py-3 px-4">
-                            <Badge className="bg-green-500/20 text-green-400">Active</Badge>
+                            <Badge className={user.status === "active" ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}>
+                              {user.status}
+                            </Badge>
                           </td>
                           <td className="py-3 px-4 text-muted-foreground text-xs">{user.joinDate}</td>
                           <td className="py-3 px-4">
