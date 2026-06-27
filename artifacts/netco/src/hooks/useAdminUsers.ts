@@ -69,51 +69,60 @@ export function useAdminUsers() {
       // Enrich profiles with order and plan data
       const enrichedUsers = await Promise.all(
         (profiles || []).map(async (profile) => {
+          // Guard against null/undefined profile
+          if (!profile?.id) {
+            console.error("[v0] Profile missing ID, skipping");
+            return null;
+          }
+
           // Get orders count and total spent
           const { data: orders, error: ordersError } = await supabase
             .from("orders")
             .select("amount, status")
-            .eq("user_id", profile.id);
+            .eq("user_id", profile.id)
+            .catch(() => ({ data: null }));
 
           // Get active plans count
           const { data: plans, error: plansError } = await supabase
             .from("user_plans")
             .select("id")
             .eq("user_id", profile.id)
-            .eq("status", "active");
+            .eq("status", "active")
+            .catch(() => ({ data: null }));
 
           // Get notification count
           const { data: notifications, error: notifError } = await supabase
             .from("notifications")
             .select("id")
             .eq("user_id", profile.id)
-            .eq("read", false);
+            .eq("read", false)
+            .catch(() => ({ data: null }));
 
-          const ordersCount = orders?.length || 0;
-          const totalSpent = orders?.reduce((sum, o) => sum + (o.amount || 0), 0) || 0;
-          const activePlansCount = plans?.length || 0;
-          const notificationsCount = notifications?.length || 0;
+          const ordersCount = (orders?.length) || 0;
+          const totalSpent = (orders?.reduce((sum, o) => sum + (o?.amount || 0), 0)) || 0;
+          const activePlansCount = (plans?.length) || 0;
+          const notificationsCount = (notifications?.length) || 0;
 
           return {
-            id: profile.id,
-            username: profile.username || "user",
-            fullName: profile.full_name || profile.username || "User",
-            email: profile.email || "",
-            phone: profile.phone || "",
-            country: profile.country || "Not specified",
-            bio: profile.bio,
+            id: profile.id || "",
+            username: profile?.username || "user",
+            fullName: profile?.full_name || profile?.username || "User",
+            email: profile?.email || "No email",
+            phone: profile?.phone || "No phone",
+            country: profile?.country || "Not specified",
+            bio: profile?.bio || undefined,
             ordersCount,
             activePlansCount,
             totalSpent,
             notificationsCount,
-            status: profile.status || "active",
-            joinDate: new Date(profile.created_at).toLocaleDateString(),
-            emailVerified: profile.email_verified || false,
-            phoneVerified: profile.phone_verified || false,
-            twoFactorEnabled: profile.two_factor_enabled || false,
+            status: profile?.status || "active",
+            joinDate: profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : "Unknown",
+            emailVerified: profile?.email_verified || false,
+            phoneVerified: profile?.phone_verified || false,
+            twoFactorEnabled: profile?.two_factor_enabled || false,
           };
         })
-      );
+      ).then(users => users.filter(u => u !== null));
 
       setUsers(enrichedUsers);
     } catch (err) {
@@ -127,12 +136,16 @@ export function useAdminUsers() {
   return { users, loading, error, refetch: fetchUsers };
 }
 
-export function useUserDevices(userId: string) {
+export function useUserDevices(userId: string | undefined) {
   const [devices, setDevices] = useState<UserDevices[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setLoading(false);
+      setDevices([]);
+      return;
+    }
 
     const fetchDevices = async () => {
       try {
@@ -140,21 +153,23 @@ export function useUserDevices(userId: string) {
           .from("devices")
           .select("id, name, browser, os, last_active")
           .eq("user_id", userId)
-          .order("last_active", { ascending: false });
+          .order("last_active", { ascending: false })
+          .catch(() => ({ data: null }));
 
         if (error) throw error;
 
         setDevices(
           (data || []).map((d) => ({
-            id: d.id,
-            name: d.name,
-            browser: d.browser,
-            os: d.os,
-            lastActive: formatTimeAgo(new Date(d.last_active)),
-          }))
+            id: d?.id || "",
+            name: d?.name || "Unknown Device",
+            browser: d?.browser || "Unknown",
+            os: d?.os || "Unknown",
+            lastActive: d?.last_active ? formatTimeAgo(new Date(d.last_active)) : "Unknown",
+          })).filter(d => d.id)
         );
       } catch (err) {
         console.error("[v0] Error fetching devices:", err);
+        setDevices([]);
       } finally {
         setLoading(false);
       }
@@ -163,15 +178,19 @@ export function useUserDevices(userId: string) {
     fetchDevices();
   }, [userId]);
 
-  return { devices, loading };
+  return { devices: devices || [], loading };
 }
 
-export function useUserLoginHistory(userId: string) {
+export function useUserLoginHistory(userId: string | undefined) {
   const [history, setHistory] = useState<UserLoginHistory[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setLoading(false);
+      setHistory([]);
+      return;
+    }
 
     const fetchHistory = async () => {
       try {
@@ -180,22 +199,24 @@ export function useUserLoginHistory(userId: string) {
           .select("id, browser, device, status, created_at, ip_address")
           .eq("user_id", userId)
           .order("created_at", { ascending: false })
-          .limit(10);
+          .limit(10)
+          .catch(() => ({ data: null }));
 
         if (error) throw error;
 
         setHistory(
           (data || []).map((h) => ({
-            id: h.id,
-            browser: h.browser,
-            device: h.device,
-            status: h.status,
-            date: formatTimeAgo(new Date(h.created_at)),
-            ipAddress: h.ip_address,
-          }))
+            id: h?.id || "",
+            browser: h?.browser || "Unknown",
+            device: h?.device || "Unknown",
+            status: (h?.status === "success" || h?.status === "failed") ? h.status : "unknown",
+            date: h?.created_at ? formatTimeAgo(new Date(h.created_at)) : "Unknown",
+            ipAddress: h?.ip_address || undefined,
+          })).filter(h => h.id)
         );
       } catch (err) {
         console.error("[v0] Error fetching login history:", err);
+        setHistory([]);
       } finally {
         setLoading(false);
       }
@@ -204,15 +225,19 @@ export function useUserLoginHistory(userId: string) {
     fetchHistory();
   }, [userId]);
 
-  return { history, loading };
+  return { history: history || [], loading };
 }
 
-export function useUserPlans(userId: string) {
+export function useUserPlans(userId: string | undefined) {
   const [plans, setPlans] = useState<UserPlan[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setLoading(false);
+      setPlans([]);
+      return;
+    }
 
     const fetchPlans = async () => {
       try {
@@ -220,21 +245,23 @@ export function useUserPlans(userId: string) {
           .from("user_plans")
           .select("id, plan_name, network, expiry_date, status")
           .eq("user_id", userId)
-          .order("expiry_date", { ascending: false });
+          .order("expiry_date", { ascending: false })
+          .catch(() => ({ data: null }));
 
         if (error) throw error;
 
         setPlans(
           (data || []).map((p) => ({
-            id: p.id,
-            name: p.plan_name,
-            network: p.network,
-            expiryDate: new Date(p.expiry_date).toLocaleDateString(),
-            status: p.status,
-          }))
+            id: p?.id || "",
+            name: p?.plan_name || "Unknown Plan",
+            network: p?.network || "unknown",
+            expiryDate: p?.expiry_date ? new Date(p.expiry_date).toLocaleDateString() : "Unknown",
+            status: (p?.status === "active" || p?.status === "expired" || p?.status === "cancelled") ? p.status : "unknown",
+          })).filter(p => p.id)
         );
       } catch (err) {
         console.error("[v0] Error fetching plans:", err);
+        setPlans([]);
       } finally {
         setLoading(false);
       }
@@ -243,7 +270,7 @@ export function useUserPlans(userId: string) {
     fetchPlans();
   }, [userId]);
 
-  return { plans, loading };
+  return { plans: plans || [], loading };
 }
 
 function formatTimeAgo(date: Date): string {

@@ -997,24 +997,24 @@ export default function Admin() {
                       </tr>
                     ) : (
                       filteredUsers.map((user) => (
-                        <tr key={user.id} className="border-b border-card-border hover:bg-muted/10 transition-colors">
+                        <tr key={user?.id || Math.random()} className="border-b border-card-border hover:bg-muted/10 transition-colors">
                           <td className="py-3 px-4">
                             <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/50 rounded-lg flex items-center justify-center text-xs font-bold">
-                              {user.username[0].toUpperCase()}
+                              {(user?.username?.[0] || "U").toUpperCase()}
                             </div>
                           </td>
-                          <td className="py-3 px-4 font-medium">@{user.username}</td>
-                          <td className="py-3 px-4 text-muted-foreground">{user.email}</td>
-                          <td className="py-3 px-4 text-muted-foreground">{user.phone}</td>
-                          <td className="py-3 px-4 text-muted-foreground">{user.country}</td>
-                          <td className="py-3 px-4 text-center">{user.ordersCount}</td>
-                          <td className="py-3 px-4 text-center">{user.activePlansCount}</td>
+                          <td className="py-3 px-4 font-medium">@{user?.username || "No username"}</td>
+                          <td className="py-3 px-4 text-muted-foreground">{user?.email || "No email"}</td>
+                          <td className="py-3 px-4 text-muted-foreground">{user?.phone || "No phone"}</td>
+                          <td className="py-3 px-4 text-muted-foreground">{user?.country || "Not specified"}</td>
+                          <td className="py-3 px-4 text-center">{user?.ordersCount || 0}</td>
+                          <td className="py-3 px-4 text-center">{user?.activePlansCount || 0}</td>
                           <td className="py-3 px-4">
-                            <Badge className={user.status === "active" ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}>
-                              {user.status}
+                            <Badge className={(user?.status === "active") ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}>
+                              {user?.status || "unknown"}
                             </Badge>
                           </td>
-                          <td className="py-3 px-4 text-muted-foreground text-xs">{user.joinDate}</td>
+                          <td className="py-3 px-4 text-muted-foreground text-xs">{user?.joinDate || "Unknown"}</td>
                           <td className="py-3 px-4">
                             <Button
                               size="sm"
