@@ -87,7 +87,7 @@ export function useAdminUsers() {
             .from("notifications")
             .select("id")
             .eq("user_id", profile.id)
-            .eq("read", false);
+            .eq("is_read", false);
 
           const ordersCount = orders?.length || 0;
           const totalSpent = orders?.reduce((sum, o) => sum + (o.amount || 0), 0) || 0;
