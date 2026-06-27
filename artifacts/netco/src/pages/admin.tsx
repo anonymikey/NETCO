@@ -28,6 +28,7 @@ import { apiUrl } from "@/lib/api";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { AdminNotificationsPanel } from "@/components/admin-notifications-panel";
 import { UserDetailDrawer } from "@/components/user-detail-drawer";
+import { LiveNetworkActivity } from "@/components/live-network-activity";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 
 const NETWORK_COLORS = ["#00F5FF", "#7B61FF", "#0057A8"];
@@ -509,7 +510,12 @@ export default function Admin() {
                       ))}
                     </div>
                   </div>
-            )}
+                )}
+              </div>
+            </div>
+
+            {/* Live Network Activity */}
+            <LiveNetworkActivity />
 
             {/* Quick Actions */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
