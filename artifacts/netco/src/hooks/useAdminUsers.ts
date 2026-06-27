@@ -95,22 +95,22 @@ export function useAdminUsers() {
           const notificationsCount = notifications?.length || 0;
 
           return {
-            id: profile.id,
-            username: profile.username || "user",
-            fullName: profile.full_name || profile.username || "User",
-            email: profile.email || "",
-            phone: profile.phone || "",
-            country: profile.country || "Not specified",
-            bio: profile.bio,
-            ordersCount,
-            activePlansCount,
-            totalSpent,
-            notificationsCount,
-            status: profile.status || "active",
-            joinDate: new Date(profile.created_at).toLocaleDateString(),
-            emailVerified: profile.email_verified || false,
-            phoneVerified: profile.phone_verified || false,
-            twoFactorEnabled: profile.two_factor_enabled || false,
+            id: profile?.id || "",
+            username: profile?.username || "user",
+            fullName: profile?.full_name || profile?.username || "User",
+            email: profile?.email || "No email",
+            phone: profile?.phone || "No phone",
+            country: profile?.country || "Not specified",
+            bio: profile?.bio || undefined,
+            ordersCount: ordersCount || 0,
+            activePlansCount: activePlansCount || 0,
+            totalSpent: totalSpent || 0,
+            notificationsCount: notificationsCount || 0,
+            status: (profile?.status || "active") as "active" | "inactive" | "suspended",
+            joinDate: profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : "Unknown",
+            emailVerified: profile?.email_verified ?? false,
+            phoneVerified: profile?.phone_verified ?? false,
+            twoFactorEnabled: profile?.two_factor_enabled ?? false,
           };
         })
       );
@@ -127,12 +127,15 @@ export function useAdminUsers() {
   return { users, loading, error, refetch: fetchUsers };
 }
 
-export function useUserDevices(userId: string) {
+export function useUserDevices(userId: string | null | undefined) {
   const [devices, setDevices] = useState<UserDevices[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
 
     const fetchDevices = async () => {
       try {
@@ -166,12 +169,15 @@ export function useUserDevices(userId: string) {
   return { devices, loading };
 }
 
-export function useUserLoginHistory(userId: string) {
+export function useUserLoginHistory(userId: string | null | undefined) {
   const [history, setHistory] = useState<UserLoginHistory[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
 
     const fetchHistory = async () => {
       try {
@@ -207,12 +213,15 @@ export function useUserLoginHistory(userId: string) {
   return { history, loading };
 }
 
-export function useUserPlans(userId: string) {
+export function useUserPlans(userId: string | null | undefined) {
   const [plans, setPlans] = useState<UserPlan[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
 
     const fetchPlans = async () => {
       try {
