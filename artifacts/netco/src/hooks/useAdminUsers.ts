@@ -45,6 +45,14 @@ export interface UserPlan {
   status: "active" | "expired" | "cancelled";
 }
 
+export interface UserOrder {
+  id: string;
+  network: string;
+  amount: number;
+  status: "completed" | "pending" | "failed" | "cancelled";
+  createdAt: string;
+}
+
 export function useAdminUsers() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -253,6 +261,49 @@ export function useUserPlans(userId: string | null | undefined) {
   }, [userId]);
 
   return { plans, loading };
+}
+
+export function useUserOrders(userId: string | null | undefined) {
+  const [orders, setOrders] = useState<UserOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchOrders = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("orders")
+          .select("id, network, amount, status, created_at")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        if (error) throw error;
+
+        setOrders(
+          (data || []).map((o) => ({
+            id: o.id,
+            network: o.network,
+            amount: o.amount,
+            status: o.status,
+            createdAt: formatTimeAgo(new Date(o.created_at)),
+          }))
+        );
+      } catch (err) {
+        console.error("[v0] Error fetching orders:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [userId]);
+
+  return { orders, loading };
 }
 
 function formatTimeAgo(date: Date): string {

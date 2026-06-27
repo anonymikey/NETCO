@@ -1,11 +1,11 @@
 import { useState } from "react";
 import {
   X, Mail, Phone, MapPin, Shield, Clock, CheckCircle, AlertCircle,
-  Smartphone, Globe, Calendar, Send, ShoppingCart, Eye, Loader2, Users,
+  Smartphone, Globe, Calendar, Send, ShoppingCart, Eye, Loader2, Users, Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useUserDevices, useUserLoginHistory, useUserPlans } from "@/hooks/useAdminUsers";
+import { useUserDevices, useUserLoginHistory, useUserPlans, useUserOrders } from "@/hooks/useAdminUsers";
 
 interface UserDetailDrawerProps {
   user: any;
@@ -15,9 +15,10 @@ interface UserDetailDrawerProps {
 }
 
 export function UserDetailDrawer({ user, isOpen, onClose, onSendNotification }: UserDetailDrawerProps) {
-  const [activeTab, setActiveTab] = useState<"profile" | "devices" | "history" | "plans">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "orders" | "devices" | "history" | "plans">("profile");
   
   // Fetch real data from Supabase
+  const { orders, loading: ordersLoading } = useUserOrders(user?.id);
   const { devices, loading: devicesLoading } = useUserDevices(user?.id);
   const { history: loginHistory, loading: historyLoading } = useUserLoginHistory(user?.id);
   const { plans, loading: plansLoading } = useUserPlans(user?.id);
@@ -147,8 +148,8 @@ export function UserDetailDrawer({ user, isOpen, onClose, onSendNotification }: 
 
           {/* Tabs */}
           <div>
-            <div className="flex gap-2 mb-4 border-b border-card-border">
-              {["profile", "devices", "history", "plans"].map((tab) => (
+            <div className="flex gap-2 mb-4 border-b border-card-border overflow-x-auto">
+              {["profile", "orders", "devices", "history", "plans"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab as any)}
@@ -162,6 +163,45 @@ export function UserDetailDrawer({ user, isOpen, onClose, onSendNotification }: 
                 </button>
               ))}
             </div>
+
+            {/* Orders Tab */}
+            {activeTab === "orders" && (
+              <div className="space-y-2">
+                {ordersLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : orders.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Package className="w-8 h-8 text-muted-foreground mx-auto opacity-50 mb-2" />
+                    <p className="text-sm text-muted-foreground">No orders found</p>
+                  </div>
+                ) : (
+                  orders.map((order) => (
+                    <div key={order.id} className="p-3 bg-muted/10 rounded-lg border border-muted/20">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Package className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm font-medium capitalize">{order.network}</span>
+                        </div>
+                        <Badge className={
+                          order.status === "completed" ? "bg-green-500/20 text-green-400" :
+                          order.status === "pending" ? "bg-yellow-500/20 text-yellow-400" :
+                          order.status === "failed" ? "bg-red-500/20 text-red-400" :
+                          "bg-gray-500/20 text-gray-400"
+                        }>
+                          {order.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span className="font-medium">Ksh {order.amount.toLocaleString()}</span>
+                        <span>{order.createdAt}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
 
             {/* Devices Tab */}
             {activeTab === "devices" && (
