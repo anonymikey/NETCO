@@ -78,48 +78,79 @@ export default function AccountPage() {
     }
   }, [authLoading, user, session, navigate]);
 
-  // Load profile
+  // Load profile directly from Supabase (not from API to avoid SPA rewrite issues)
   useEffect(() => {
     if (!user || authLoading) return;
 
     const loadProfile = async () => {
       try {
-        const res = await fetch(apiUrl(`api/auth/profile/${user.id}`));
-        if (!res.ok) throw new Error("Failed to load profile");
+        console.log("[v0] Loading profile for user:", user.id);
+        
+        // Query user_profiles table directly from Supabase
+        const { data, error } = await supabase
+          .from("user_profiles")
+          .select("*")
+          .eq("supabase_uid", user.id)
+          .single();
 
-        const contentType = res.headers.get("content-type");
-        if (!contentType?.includes("application/json")) {
-          console.error("[v0] API returned non-JSON response, using fallback");
-          setProfile({
-            id: user.id,
-            email: user.email || "",
-            isEmailVerified: false,
-            isPhoneVerified: false,
-            newsletterSubscribed: true,
-          });
-          setLoading(false);
-          return;
+        if (error) {
+          // If profile doesn't exist yet, that's ok - use defaults
+          if (error.code === "PGRST116") {
+            console.log("[v0] Profile not found, using defaults");
+            setProfile({
+              id: user.id,
+              email: user.email || "",
+              isEmailVerified: !!user.email_confirmed_at,
+              isPhoneVerified: false,
+              newsletterSubscribed: true,
+            });
+            setLoading(false);
+            return;
+          }
+          throw error;
         }
 
-        const data = await res.json();
-        setProfile(data);
-        setAvatarUrl(data.avatarUrl || "");
-        setFullName(data.fullName || "");
+        console.log("[v0] Profile loaded from Supabase:", data);
+
+        // Set profile from database
+        const isEmailVerified = !!user.email_confirmed_at;
+        setProfile({
+          id: data.id,
+          email: data.email,
+          username: data.username,
+          fullName: data.full_name,
+          phone: data.phone,
+          country: data.country,
+          bio: data.bio,
+          avatarUrl: data.avatar_url,
+          timezone: data.timezone,
+          preferredLanguage: data.preferred_language,
+          preferredTheme: data.preferred_theme,
+          isEmailVerified,
+          isPhoneVerified: data.is_phone_verified,
+          newsletterSubscribed: data.newsletter_subscribed,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+        });
+
+        // Set individual state variables for form fields
+        setAvatarUrl(data.avatar_url || "");
+        setFullName(data.full_name || "");
         setUsername(data.username || "");
         setPhone(data.phone || "");
         setCountry(data.country || "");
         setBio(data.bio || "");
         setTimezone(data.timezone || "UTC");
-        setPreferredLanguage(data.preferredLanguage || "en");
-        setPreferredTheme(data.preferredTheme || "dark");
-        setNewsletterSubscribed(data.newsletterSubscribed ?? true);
+        setPreferredLanguage(data.preferred_language || "en");
+        setPreferredTheme(data.preferred_theme || "dark");
+        setNewsletterSubscribed(data.newsletter_subscribed ?? true);
       } catch (err) {
-        console.error("[v0] Failed to load profile:", err);
-        // Use fallback profile with user email
+        console.error("[v0] Failed to load profile from Supabase:", err);
+        // Still set minimal profile with user data
         setProfile({
           id: user.id,
           email: user.email || "",
-          isEmailVerified: false,
+          isEmailVerified: !!user.email_confirmed_at,
           isPhoneVerified: false,
           newsletterSubscribed: true,
         });
@@ -137,31 +168,71 @@ export default function AccountPage() {
 
     setSaving(true);
     try {
-      const { error } = await supabase
+      console.log("[v0] Saving profile via API for user:", user.id);
+      
+      const res = await fetch(apiUrl(`api/auth/profile/${user.id}`), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: username || undefined,
+          fullName: fullName || undefined,
+          phone: phone || undefined,
+          country: country || undefined,
+          bio: bio || undefined,
+          avatarUrl: avatarUrl || undefined,
+          timezone: timezone || undefined,
+          preferredLanguage: preferredLanguage || undefined,
+          preferredTheme: preferredTheme || undefined,
+          newsletterSubscribed,
+        }),
+      });
+
+      console.log("[v0] API response status:", res.status);
+      console.log("[v0] API response content-type:", res.headers.get("content-type"));
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("[v0] API error response:", text);
+        throw new Error("Failed to save profile");
+      }
+
+      // After successful PATCH, reload profile from Supabase to ensure consistency
+      console.log("[v0] Reloading profile from Supabase after save");
+      const { data, error } = await supabase
         .from("user_profiles")
-        .update({
-          full_name: fullName || null,
-          phone: phone || null,
-          country: country || null,
-          bio: bio || null,
-          preferred_theme: preferredTheme || null,
-          newsletter_subscribed: newsletterSubscribed,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id);
+        .select("*")
+        .eq("supabase_uid", user.id)
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("[v0] Failed to reload profile:", error);
+        throw error;
+      }
 
+      console.log("[v0] Profile reloaded successfully:", data);
+
+      // Update profile with fresh data from Supabase
+      const isEmailVerified = !!user.email_confirmed_at;
       setProfile({
-        ...profile,
-        fullName,
-        phone,
-        country,
-        bio,
-        preferredTheme,
-        newsletterSubscribed,
-        updatedAt: new Date().toISOString(),
-      } as UserProfile);
+        id: data.id,
+        email: data.email,
+        username: data.username,
+        fullName: data.full_name,
+        phone: data.phone,
+        country: data.country,
+        bio: data.bio,
+        avatarUrl: data.avatar_url,
+        timezone: data.timezone,
+        preferredLanguage: data.preferred_language,
+        preferredTheme: data.preferred_theme,
+        isEmailVerified,
+        isPhoneVerified: data.is_phone_verified,
+        newsletterSubscribed: data.newsletter_subscribed,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      });
 
       toast({
         title: "Profile updated",
@@ -325,13 +396,13 @@ export default function AccountPage() {
           </div>
         )}
 
-        {/* Verification Alert */}
+        {/* Verification Alert - using Supabase email_confirmed_at */}
         {profile && !profile.isEmailVerified && (
           <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg flex gap-3">
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div>
               <p className="font-medium">Email not verified</p>
-              <p className="text-sm text-muted-foreground mt-1">Check your inbox for a verification email.</p>
+              <p className="text-sm text-muted-foreground mt-1">Check your inbox for a verification email from Supabase.</p>
             </div>
           </div>
         )}
