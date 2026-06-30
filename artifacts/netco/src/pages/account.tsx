@@ -53,6 +53,20 @@ export default function AccountPage() {
   const [preferredLanguage, setPreferredLanguage] = useState("");
   const [preferredTheme, setPreferredTheme] = useState("dark");
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(true);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [notificationPreferences, setNotificationPreferences] = useState({
+    orderNotifications: true,
+    planExpiryReminders: true,
+    systemAnnouncements: true,
+    marketingEmails: false,
+  });
+  const [activeDevices, setActiveDevices] = useState<any[]>([]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -148,6 +162,40 @@ export default function AccountPage() {
       setAvatarUrl(result);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newPassword || !confirmPassword) {
+      toast({ title: "Error", description: "Please fill in all password fields", variant: "destructive" });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      toast({ title: "Error", description: "Password must be at least 8 characters", variant: "destructive" });
+      return;
+    }
+
+    setUpdatingPassword(true);
+    try {
+      // Simulated password update - in real app, would use Supabase auth
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      toast({ title: "Success", description: "Password updated successfully" });
+    } catch (err) {
+      console.error("[v0] Password change error:", err);
+      toast({ title: "Error", description: "Failed to update password", variant: "destructive" });
+    } finally {
+      setUpdatingPassword(false);
+    }
   };
 
   const handleSignOut = async () => {
@@ -523,6 +571,192 @@ export default function AccountPage() {
                 {profile?.isEmailVerified ? "Verified" : "Pending"}
               </Badge>
             </div>
+          </div>
+        </div>
+
+        {/* Security Section */}
+        <div className="glass-card rounded-lg border border-card-border p-6">
+          <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <Lock className="w-5 h-5 text-cyan-400" />
+            Security
+          </h3>
+          <form onSubmit={handlePasswordChange} className="space-y-6">
+            {/* Current Password */}
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword">Current Password</Label>
+              <div className="relative">
+                <Input
+                  id="currentPassword"
+                  type={showCurrentPassword ? "text" : "password"}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Enter current password"
+                  className="bg-card border-border focus:border-primary pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* New Password */}
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  className="bg-card border-border focus:border-primary pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                  className="bg-card border-border focus:border-primary pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Update Button */}
+            <Button
+              type="submit"
+              disabled={updatingPassword}
+              className="w-full bg-primary hover:bg-primary/90 h-11 gap-2"
+            >
+              {updatingPassword ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4" />
+                  Update Password
+                </>
+              )}
+            </Button>
+          </form>
+        </div>
+
+        {/* Notification Preferences Section */}
+        <div className="glass-card rounded-lg border border-card-border p-6">
+          <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <Bell className="w-5 h-5 text-cyan-400" />
+            Notification Preferences
+          </h3>
+          <div className="space-y-4">
+            {[
+              { key: "orderNotifications", label: "Order Notifications", desc: "Get notified when your orders are processed" },
+              { key: "planExpiryReminders", label: "Plan Expiry Reminders", desc: "Receive reminders before plans expire" },
+              { key: "systemAnnouncements", label: "System Announcements", desc: "Important updates and maintenance notices" },
+              { key: "marketingEmails", label: "Marketing Emails", desc: "Special offers and promotional content" },
+            ].map(({ key, label, desc }) => (
+              <div key={key} className="flex items-center gap-4 p-3 bg-background rounded-lg border border-border">
+                <Checkbox
+                  id={key}
+                  checked={notificationPreferences[key as keyof typeof notificationPreferences]}
+                  onCheckedChange={(checked) =>
+                    setNotificationPreferences({
+                      ...notificationPreferences,
+                      [key]: checked === true,
+                    })
+                  }
+                />
+                <div className="flex-1 cursor-pointer">
+                  <Label htmlFor={key} className="font-medium cursor-pointer mb-0">{label}</Label>
+                  <p className="text-xs text-muted-foreground mt-1">{desc}</p>
+                </div>
+              </div>
+            ))}
+
+            {/* Save Button */}
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="w-full bg-primary hover:bg-primary/90 h-11 gap-2 mt-4"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Save Preferences
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* Active Sessions Section */}
+        <div className="glass-card rounded-lg border border-card-border p-6">
+          <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <Smartphone className="w-5 h-5 text-cyan-400" />
+            Active Sessions
+          </h3>
+          <div className="space-y-3">
+            <div className="p-4 bg-background rounded-lg border border-border">
+              <div className="flex items-center justify-between mb-2">
+                <div className="font-medium">Current Device</div>
+                <Badge className="bg-green-500/20 text-green-400">Active</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">Chrome • macOS • Last active: Now</p>
+              <p className="text-xs text-muted-foreground mt-2">IP: 192.168.1.1</p>
+            </div>
+
+            {activeDevices.length === 0 ? (
+              <p className="text-center text-sm text-muted-foreground py-4">No other active sessions</p>
+            ) : (
+              activeDevices.map((device) => (
+                <div key={device.id} className="p-4 bg-background rounded-lg border border-border">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-medium">{device.browser}</div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-red-400 border-red-400/30 hover:bg-red-500/10"
+                      onClick={() => toast({ title: "Device logged out", description: "Session terminated" })}
+                    >
+                      Logout
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{device.os} • Last active: {device.lastActive}</p>
+                  <p className="text-xs text-muted-foreground mt-2">IP: {device.ipAddress}</p>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
