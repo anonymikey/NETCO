@@ -13,6 +13,10 @@ import adminOrdersRouter from "./admin-orders";
 import adminAnnouncementsRouter from "./admin-announcements";
 import notificationsRouter from "./notifications";
 import adminNotificationsRouter from "./admin-notifications";
+import notificationPreferencesRouter from "./notification-preferences";
+import activeSessionsRouter from "./active-sessions";
+import emailLogsRouter from "./email-logs";
+import adminEmailNotificationsRouter from "./admin-email-notifications";
 
 const router: IRouter = Router();
 
@@ -31,5 +35,9 @@ router.use("/admin", adminAnnouncementsRouter);
 router.use("/admin", adminNotificationsRouter);
 router.use("/auth/email", authEmailRouter);
 router.use("/auth/profile", authProfileRouter);
+router.use("/auth/notification-preferences", notificationPreferencesRouter);
+router.use("/auth/active-sessions", activeSessionsRouter);
+router.use("/auth/email-logs", emailLogsRouter);
+router.use("/admin/email-notifications", adminEmailNotificationsRouter);
 
 export default router;
