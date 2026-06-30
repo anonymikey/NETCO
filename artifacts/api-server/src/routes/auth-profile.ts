@@ -16,10 +16,15 @@ const CreateProfileBody = z.object({
 });
 
 const UpdateProfileBody = z.object({
+  username: z.string().optional(),
   fullName: z.string().optional(),
   phone: z.string().optional(),
+  country: z.string().optional(),
   bio: z.string().optional(),
-  avatarUrl: z.string().url().optional(),
+  avatarUrl: z.string().optional(),
+  timezone: z.string().optional(),
+  preferredLanguage: z.string().optional(),
+  preferredTheme: z.string().optional(),
   newsletterSubscribed: z.boolean().optional(),
 });
 
@@ -105,10 +110,15 @@ router.get("/:supabaseUid", async (req, res) => {
     res.json({
       id: profile.id,
       email: profile.email,
+      username: profile.username,
       fullName: profile.fullName,
       phone: profile.phone,
+      country: profile.country,
       bio: profile.bio,
       avatarUrl: profile.avatarUrl,
+      timezone: profile.timezone,
+      preferredLanguage: profile.preferredLanguage,
+      preferredTheme: profile.preferredTheme,
       isEmailVerified: profile.isEmailVerified,
       isPhoneVerified: profile.isPhoneVerified,
       newsletterSubscribed: profile.newsletterSubscribed,
@@ -146,10 +156,15 @@ router.patch("/:supabaseUid", async (req, res) => {
     const [updated] = await db
       .update(userProfilesTable)
       .set({
+        username: parsed.data.username ?? profile.username,
         fullName: parsed.data.fullName ?? profile.fullName,
         phone: parsed.data.phone ?? profile.phone,
+        country: parsed.data.country ?? profile.country,
         bio: parsed.data.bio ?? profile.bio,
         avatarUrl: parsed.data.avatarUrl ?? profile.avatarUrl,
+        timezone: parsed.data.timezone ?? profile.timezone,
+        preferredLanguage: parsed.data.preferredLanguage ?? profile.preferredLanguage,
+        preferredTheme: parsed.data.preferredTheme ?? profile.preferredTheme,
         newsletterSubscribed:
           parsed.data.newsletterSubscribed !== undefined
             ? parsed.data.newsletterSubscribed
@@ -162,10 +177,15 @@ router.patch("/:supabaseUid", async (req, res) => {
     res.json({
       id: updated.id,
       email: updated.email,
+      username: updated.username,
       fullName: updated.fullName,
       phone: updated.phone,
+      country: updated.country,
       bio: updated.bio,
       avatarUrl: updated.avatarUrl,
+      timezone: updated.timezone,
+      preferredLanguage: updated.preferredLanguage,
+      preferredTheme: updated.preferredTheme,
       isEmailVerified: updated.isEmailVerified,
       isPhoneVerified: updated.isPhoneVerified,
       newsletterSubscribed: updated.newsletterSubscribed,

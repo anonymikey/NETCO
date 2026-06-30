@@ -93,7 +93,7 @@ export default function AccountPage() {
           setProfile({
             id: user.id,
             email: user.email || "",
-            isEmailVerified: false,
+            isEmailVerified: !!user.email_confirmed_at,
             isPhoneVerified: false,
             newsletterSubscribed: true,
           });
@@ -102,7 +102,12 @@ export default function AccountPage() {
         }
 
         const data = await res.json();
-        setProfile(data);
+        // Override email verification status with Supabase auth state
+        const isEmailVerified = !!user.email_confirmed_at;
+        setProfile({
+          ...data,
+          isEmailVerified,
+        });
         setAvatarUrl(data.avatarUrl || "");
         setFullName(data.fullName || "");
         setUsername(data.username || "");
@@ -115,11 +120,11 @@ export default function AccountPage() {
         setNewsletterSubscribed(data.newsletterSubscribed ?? true);
       } catch (err) {
         console.error("[v0] Failed to load profile:", err);
-        // Use fallback profile with user email
+        // Use fallback profile with user email and Supabase auth state
         setProfile({
           id: user.id,
           email: user.email || "",
-          isEmailVerified: false,
+          isEmailVerified: !!user.email_confirmed_at,
           isPhoneVerified: false,
           newsletterSubscribed: true,
         });
@@ -137,30 +142,34 @@ export default function AccountPage() {
 
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("user_profiles")
-        .update({
-          full_name: fullName || null,
-          phone: phone || null,
-          country: country || null,
-          bio: bio || null,
-          preferred_theme: preferredTheme || null,
-          newsletter_subscribed: newsletterSubscribed,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id);
+      const res = await fetch(apiUrl(`api/auth/profile/${user.id}`), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: username || undefined,
+          fullName: fullName || undefined,
+          phone: phone || undefined,
+          country: country || undefined,
+          bio: bio || undefined,
+          avatarUrl: avatarUrl || undefined,
+          timezone: timezone || undefined,
+          preferredLanguage: preferredLanguage || undefined,
+          preferredTheme: preferredTheme || undefined,
+          newsletterSubscribed,
+        }),
+      });
 
-      if (error) throw error;
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: "Failed to save profile" }));
+        throw new Error(error.error || "Failed to save profile");
+      }
 
+      const data = await res.json();
       setProfile({
         ...profile,
-        fullName,
-        phone,
-        country,
-        bio,
-        preferredTheme,
-        newsletterSubscribed,
-        updatedAt: new Date().toISOString(),
+        ...data,
       } as UserProfile);
 
       toast({
@@ -325,13 +334,13 @@ export default function AccountPage() {
           </div>
         )}
 
-        {/* Verification Alert */}
+        {/* Verification Alert - using Supabase email_confirmed_at */}
         {profile && !profile.isEmailVerified && (
           <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg flex gap-3">
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div>
               <p className="font-medium">Email not verified</p>
-              <p className="text-sm text-muted-foreground mt-1">Check your inbox for a verification email.</p>
+              <p className="text-sm text-muted-foreground mt-1">Check your inbox for a verification email from Supabase.</p>
             </div>
           </div>
         )}
