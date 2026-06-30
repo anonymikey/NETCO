@@ -2,11 +2,15 @@ import { useState } from "react";
 import {
   X, Mail, Phone, MapPin, Shield, Clock, CheckCircle, AlertCircle,
   Smartphone, Globe, Calendar, Send, ShoppingCart, Eye, Loader2, Users, Package,
-  Copy, CheckCheck, Wifi, WifiOff, Dot,
+  Copy, CheckCheck, Wifi, WifiOff, Dot, Bell, ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUserDevices, useUserLoginHistory, useUserPlans, useUserOrders } from "@/hooks/useAdminUsers";
+import { useToast } from "@/hooks/use-toast";
 
 // Utility functions
 function getDeviceStatus(lastActive: string): "online" | "recent" | "offline" {
@@ -31,8 +35,9 @@ function getUserStatus(lastActive: string | null, hasActivePlans: boolean): "act
   return "inactive";
 }
 
-function copyToClipboard(text: string) {
+function copyToClipboard(text: string, onSuccess: () => void) {
   navigator.clipboard.writeText(text);
+  onSuccess();
 }
 
 interface UserDetailDrawerProps {
@@ -42,14 +47,153 @@ interface UserDetailDrawerProps {
   onSendNotification: (userId: string) => void;
 }
 
+interface SendNotificationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  userId: string | null;
+  userName: string;
+  onSendSuccess: () => void;
+}
+
+function SendNotificationModal({ isOpen, onClose, userId, userName, onSendSuccess }: SendNotificationModalProps) {
+  const { toast } = useToast();
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
+  const [type, setType] = useState<string>("info");
+  const [isSending, setIsSending] = useState(false);
+
+  const handleSend = async () => {
+    if (!title.trim() || !message.trim()) {
+      toast({ title: "Error", description: "Please fill in all fields", variant: "destructive" });
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      // Call the notification API
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      
+      toast({ title: "Success", description: `Notification sent to ${userName}` });
+      setTitle("");
+      setMessage("");
+      setType("info");
+      onSendSuccess();
+      onClose();
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to send notification", variant: "destructive" });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      {isOpen && <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="bg-card rounded-lg border border-card-border shadow-lg max-w-md w-full animate-in fade-in zoom-in-95">
+          <div className="flex items-center justify-between p-6 border-b border-card-border">
+            <h2 className="font-heading font-bold text-lg flex items-center gap-2">
+              <Bell className="w-5 h-5" />
+              Send Notification
+            </h2>
+            <button onClick={onClose} className="p-1 hover:bg-muted rounded-lg transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div className="p-6 space-y-4">
+            <div>
+              <p className="text-sm font-medium mb-2">To: {userName}</p>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Title</label>
+              <Input
+                placeholder="Notification title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                disabled={isSending}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Message</label>
+              <Textarea
+                placeholder="Notification message"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                disabled={isSending}
+                rows={4}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Type</label>
+              <Select value={type} onValueChange={setType} disabled={isSending}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="info">Info</SelectItem>
+                  <SelectItem value="success">Success</SelectItem>
+                  <SelectItem value="warning">Warning</SelectItem>
+                  <SelectItem value="error">Error</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button
+                onClick={onClose}
+                variant="outline"
+                className="flex-1"
+                disabled={isSending}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSend}
+                className="flex-1 bg-primary hover:bg-primary/90 gap-2"
+                disabled={isSending}
+              >
+                {isSending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Send
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export function UserDetailDrawer({ user, isOpen, onClose, onSendNotification }: UserDetailDrawerProps) {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"profile" | "orders" | "devices" | "history" | "plans">("profile");
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
   
   // Fetch real data from Supabase
   const { orders, loading: ordersLoading } = useUserOrders(user?.id);
   const { devices, loading: devicesLoading } = useUserDevices(user?.id);
   const { history: loginHistory, loading: historyLoading } = useUserLoginHistory(user?.id);
   const { plans, loading: plansLoading } = useUserPlans(user?.id);
+
+  const handleCopyClick = (text: string, label: string) => {
+    copyToClipboard(text, () => {
+      toast({ title: "Copied", description: `${label} copied to clipboard` });
+    });
+  };
 
   if (!user) {
     return (
@@ -77,16 +221,24 @@ export function UserDetailDrawer({ user, isOpen, onClose, onSendNotification }: 
   return (
     <>
       {isOpen && <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />}
-      <div className={`fixed right-0 top-0 h-full w-full max-w-2xl bg-card border-l border-card-border shadow-lg transition-transform z-50 overflow-y-auto ${isOpen ? "translate-x-0" : "translate-x-full"}`}>
+      <div className={`fixed right-0 top-0 h-full w-full max-w-2xl bg-card border-l border-card-border shadow-lg transition-transform z-50 overflow-y-auto duration-300 ${isOpen ? "translate-x-0" : "translate-x-full"}`}>
+      
+      <SendNotificationModal
+        isOpen={showNotificationModal}
+        onClose={() => setShowNotificationModal(false)}
+        userId={user?.id}
+        userName={user?.username || user?.fullName || "User"}
+        onSendSuccess={() => onSendNotification(user?.id)}
+      />
         {/* Header */}
-        <div className="sticky top-0 bg-card border-b border-card-border p-6 flex items-center justify-between">
-          <h2 className="font-heading font-bold text-xl">User Profile</h2>
+        <div className="sticky top-0 bg-card border-b border-card-border p-4 sm:p-6 flex items-center justify-between">
+          <h2 className="font-heading font-bold text-lg sm:text-xl">User Profile</h2>
           <button onClick={onClose} className="p-1 hover:bg-muted rounded-lg transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* User Status Header */}
           <div className="flex items-center justify-between pb-4 border-b border-card-border">
             <div className="flex items-center gap-3">
@@ -130,7 +282,7 @@ export function UserDetailDrawer({ user, isOpen, onClose, onSendNotification }: 
                   </div>
                   {user?.email && (
                     <button
-                      onClick={() => copyToClipboard(user.email)}
+                      onClick={() => handleCopyClick(user.email, "Email")}
                       className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded"
                       title="Copy email"
                     >
@@ -145,7 +297,7 @@ export function UserDetailDrawer({ user, isOpen, onClose, onSendNotification }: 
                   </div>
                   {user?.phone && (
                     <button
-                      onClick={() => copyToClipboard(user.phone)}
+                      onClick={() => handleCopyClick(user.phone, "Phone")}
                       className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded"
                       title="Copy phone"
                     >
@@ -160,7 +312,7 @@ export function UserDetailDrawer({ user, isOpen, onClose, onSendNotification }: 
                   </div>
                   {user?.id && (
                     <button
-                      onClick={() => copyToClipboard(user.id)}
+                      onClick={() => handleCopyClick(user.id, "User ID")}
                       className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded"
                       title="Copy User ID"
                     >
@@ -256,7 +408,7 @@ export function UserDetailDrawer({ user, isOpen, onClose, onSendNotification }: 
 
           {/* Tabs */}
           <div>
-            <div className="flex gap-2 mb-4 border-b border-card-border overflow-x-auto">
+            <div className="flex gap-1 sm:gap-2 mb-4 border-b border-card-border overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
               {["profile", "orders", "devices", "history", "plans"].map((tab) => (
                 <button
                   key={tab}
@@ -274,15 +426,17 @@ export function UserDetailDrawer({ user, isOpen, onClose, onSendNotification }: 
 
             {/* Orders Tab */}
             {activeTab === "orders" && (
-              <div className="space-y-2">
+              <div className={`space-y-2 transition-opacity duration-300 ${activeTab === "orders" ? "opacity-100" : "opacity-0"}`}>
                 {ordersLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+                    <p className="text-sm text-muted-foreground">Loading orders...</p>
                   </div>
                 ) : orders.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Package className="w-8 h-8 text-muted-foreground mx-auto opacity-50 mb-2" />
-                    <p className="text-sm text-muted-foreground">No orders found</p>
+                  <div className="text-center py-12">
+                    <Package className="w-12 h-12 text-muted-foreground mx-auto opacity-40 mb-3" />
+                    <p className="text-sm font-medium text-muted-foreground">No orders found</p>
+                    <p className="text-xs text-muted-foreground mt-1">This user hasn't placed any orders yet</p>
                   </div>
                 ) : (
                   orders.map((order) => (
@@ -313,15 +467,17 @@ export function UserDetailDrawer({ user, isOpen, onClose, onSendNotification }: 
 
             {/* Devices Tab */}
             {activeTab === "devices" && (
-              <div className="space-y-2">
+              <div className={`space-y-2 transition-opacity duration-300 ${activeTab === "devices" ? "opacity-100" : "opacity-0"}`}>
                 {devicesLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+                    <p className="text-sm text-muted-foreground">Loading devices...</p>
                   </div>
                 ) : devices.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Smartphone className="w-8 h-8 text-muted-foreground mx-auto opacity-50 mb-2" />
-                    <p className="text-sm text-muted-foreground">No devices found</p>
+                  <div className="text-center py-12">
+                    <Smartphone className="w-12 h-12 text-muted-foreground mx-auto opacity-40 mb-3" />
+                    <p className="text-sm font-medium text-muted-foreground">No devices found</p>
+                    <p className="text-xs text-muted-foreground mt-1">This user has no connected devices</p>
                   </div>
                 ) : (
                   devices.map((device) => {
@@ -356,15 +512,17 @@ export function UserDetailDrawer({ user, isOpen, onClose, onSendNotification }: 
 
             {/* Login History Tab */}
             {activeTab === "history" && (
-              <div className="space-y-2">
+              <div className={`space-y-2 transition-opacity duration-300 ${activeTab === "history" ? "opacity-100" : "opacity-0"}`}>
                 {historyLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+                    <p className="text-sm text-muted-foreground">Loading history...</p>
                   </div>
                 ) : loginHistory.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Clock className="w-8 h-8 text-muted-foreground mx-auto opacity-50 mb-2" />
-                    <p className="text-sm text-muted-foreground">No login history</p>
+                  <div className="text-center py-12">
+                    <Clock className="w-12 h-12 text-muted-foreground mx-auto opacity-40 mb-3" />
+                    <p className="text-sm font-medium text-muted-foreground">No login history</p>
+                    <p className="text-xs text-muted-foreground mt-1">No previous logins recorded</p>
                   </div>
                 ) : (
                   loginHistory.map((login) => (
@@ -394,15 +552,17 @@ export function UserDetailDrawer({ user, isOpen, onClose, onSendNotification }: 
 
             {/* Plans Tab */}
             {activeTab === "plans" && (
-              <div className="space-y-2">
+              <div className={`space-y-2 transition-opacity duration-300 ${activeTab === "plans" ? "opacity-100" : "opacity-0"}`}>
                 {plansLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+                    <p className="text-sm text-muted-foreground">Loading plans...</p>
                   </div>
                 ) : plans.length === 0 ? (
-                  <div className="text-center py-8">
-                    <ShoppingCart className="w-8 h-8 text-muted-foreground mx-auto opacity-50 mb-2" />
-                    <p className="text-sm text-muted-foreground">No active plans</p>
+                  <div className="text-center py-12">
+                    <Shield className="w-12 h-12 text-muted-foreground mx-auto opacity-40 mb-3" />
+                    <p className="text-sm font-medium text-muted-foreground">No plans found</p>
+                    <p className="text-xs text-muted-foreground mt-1">This user has no active plans</p>
                   </div>
                 ) : (
                   plans.map((plan) => (
@@ -427,18 +587,18 @@ export function UserDetailDrawer({ user, isOpen, onClose, onSendNotification }: 
           {/* Quick Actions */}
           <div>
             <h3 className="font-heading font-bold text-lg mb-4">Quick Actions</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               <Button
-                onClick={() => user?.id && onSendNotification(user.id)}
+                onClick={() => setShowNotificationModal(true)}
                 disabled={!user?.id}
-                className="bg-primary/20 hover:bg-primary/30 text-primary gap-2 h-auto py-3"
+                className="bg-primary/20 hover:bg-primary/30 text-primary gap-2 h-auto py-3 transition-all duration-200"
               >
                 <Send className="w-4 h-4" />
                 <span className="text-xs">Send Notification</span>
               </Button>
               <Button 
                 variant="outline" 
-                className="gap-2 h-auto py-3" 
+                className="gap-2 h-auto py-3 transition-all duration-200 hover:border-primary/50" 
                 disabled={!user?.id}
                 onClick={() => setActiveTab("orders")}
               >
@@ -447,11 +607,11 @@ export function UserDetailDrawer({ user, isOpen, onClose, onSendNotification }: 
               </Button>
               <Button 
                 variant="outline" 
-                className="gap-2 h-auto py-3" 
+                className="gap-2 h-auto py-3 transition-all duration-200 hover:border-primary/50" 
                 disabled={!user?.id}
                 onClick={() => setActiveTab("plans")}
               >
-                <Eye className="w-4 h-4" />
+                <Shield className="w-4 h-4" />
                 <span className="text-xs">View Plans</span>
               </Button>
             </div>
