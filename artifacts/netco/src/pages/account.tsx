@@ -5,21 +5,33 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiUrl } from "@/lib/api";
-import { Loader2, LogOut, Save, AlertCircle } from "lucide-react";
+import { Loader2, LogOut, Save, AlertCircle, Upload, CheckCircle2, Clock, ShoppingCart, Shield, Bell, Lock, User, Globe, Eye, EyeOff } from "lucide-react";
 
 interface UserProfile {
   id: string;
   email: string;
+  username?: string;
   fullName?: string;
   phone?: string;
+  country?: string;
   bio?: string;
   avatarUrl?: string;
+  timezone?: string;
+  preferredLanguage?: string;
+  preferredTheme?: string;
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
+  twoFactorEnabled?: boolean;
   newsletterSubscribed: boolean;
+  ordersCount?: number;
+  activePlansCount?: number;
+  devicesCount?: number;
+  notificationsCount?: number;
 }
 
 export default function AccountPage() {
@@ -30,9 +42,16 @@ export default function AccountPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
+  const [country, setCountry] = useState("");
   const [bio, setBio] = useState("");
+  const [timezone, setTimezone] = useState("");
+  const [preferredLanguage, setPreferredLanguage] = useState("");
+  const [preferredTheme, setPreferredTheme] = useState("dark");
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(true);
 
   // Redirect if not authenticated
@@ -53,9 +72,15 @@ export default function AccountPage() {
 
         const data = await res.json();
         setProfile(data);
+        setAvatarUrl(data.avatarUrl || "");
         setFullName(data.fullName || "");
+        setUsername(data.username || "");
         setPhone(data.phone || "");
+        setCountry(data.country || "");
         setBio(data.bio || "");
+        setTimezone(data.timezone || "UTC");
+        setPreferredLanguage(data.preferredLanguage || "en");
+        setPreferredTheme(data.preferredTheme || "dark");
         setNewsletterSubscribed(data.newsletterSubscribed ?? true);
       } catch (err) {
         console.error("[v0] Failed to load profile:", err);
@@ -81,9 +106,15 @@ export default function AccountPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          avatarUrl: avatarUrl || undefined,
           fullName: fullName || undefined,
+          username: username || undefined,
           phone: phone || undefined,
+          country: country || undefined,
           bio: bio || undefined,
+          timezone: timezone || undefined,
+          preferredLanguage: preferredLanguage || undefined,
+          preferredTheme: preferredTheme || undefined,
           newsletterSubscribed,
         }),
       });
@@ -107,6 +138,18 @@ export default function AccountPage() {
     }
   };
 
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      setAvatarUrl(result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -122,7 +165,7 @@ export default function AccountPage() {
       <div className="min-h-screen pt-20 pb-12 px-4 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading account settings...</p>
+          <p className="text-muted-foreground">Loading profile...</p>
         </div>
       </div>
     );
@@ -132,29 +175,124 @@ export default function AccountPage() {
     return null;
   }
 
+  const initials = (fullName || profile?.email || "U")
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
   return (
-    <div className="min-h-screen pt-20 pb-12 px-4">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen pt-16 sm:pt-20 pb-12 px-4 bg-background">
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-heading font-bold mb-2">Account Settings</h1>
-          <p className="text-muted-foreground">Manage your profile and preferences</p>
+          <h1 className="text-3xl sm:text-4xl font-heading font-bold mb-2">Profile Management</h1>
+          <p className="text-muted-foreground">Manage your account and preferences</p>
         </div>
 
-        {/* Email Verification Alert */}
+        {/* Profile Overview Card */}
+        <div className="glass-card rounded-lg border border-card-border p-6 mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+            <div className="flex-shrink-0">
+              <Avatar className="h-24 w-24 border-2 border-primary/30">
+                <AvatarImage src={avatarUrl || profile?.avatarUrl} alt="Profile" />
+                <AvatarFallback className="text-lg font-bold">{initials}</AvatarFallback>
+              </Avatar>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-2xl font-bold">{fullName || profile?.fullName || "User Profile"}</h2>
+              <p className="text-muted-foreground">@{username || profile?.username || "username"}</p>
+              <div className="flex flex-wrap gap-2 mt-3">
+                {profile?.isEmailVerified && (
+                  <Badge className="bg-green-500/20 text-green-400 gap-1">
+                    <CheckCircle2 className="w-3 h-3" /> Email Verified
+                  </Badge>
+                )}
+                {profile?.isPhoneVerified && (
+                  <Badge className="bg-blue-500/20 text-blue-400 gap-1">
+                    <CheckCircle2 className="w-3 h-3" /> Phone Verified
+                  </Badge>
+                )}
+                {profile?.twoFactorEnabled && (
+                  <Badge className="bg-cyan-500/20 text-cyan-400 gap-1">
+                    <Shield className="w-3 h-3" /> 2FA Enabled
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Statistics Grid */}
+        {profile && (profile.ordersCount || profile.activePlansCount || profile.devicesCount || profile.notificationsCount) && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="glass-card rounded-lg border border-card-border p-4 text-center">
+              <ShoppingCart className="w-6 h-6 text-cyan-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold">{profile.ordersCount || 0}</p>
+              <p className="text-xs text-muted-foreground">Orders</p>
+            </div>
+            <div className="glass-card rounded-lg border border-card-border p-4 text-center">
+              <Shield className="w-6 h-6 text-green-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold">{profile.activePlansCount || 0}</p>
+              <p className="text-xs text-muted-foreground">Active Plans</p>
+            </div>
+            <div className="glass-card rounded-lg border border-card-border p-4 text-center">
+              <User className="w-6 h-6 text-blue-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold">{profile.devicesCount || 0}</p>
+              <p className="text-xs text-muted-foreground">Devices</p>
+            </div>
+            <div className="glass-card rounded-lg border border-card-border p-4 text-center">
+              <Bell className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold">{profile.notificationsCount || 0}</p>
+              <p className="text-xs text-muted-foreground">Notifications</p>
+            </div>
+          </div>
+        )}
+
+        {/* Verification Alert */}
         {profile && !profile.isEmailVerified && (
-          <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg flex gap-3">
+          <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg flex gap-3">
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-medium text-amber-900">Email not verified</p>
-              <p className="text-sm text-amber-800 mt-1">Check your inbox for a verification email from Supabase.</p>
+              <p className="font-medium">Email not verified</p>
+              <p className="text-sm text-muted-foreground mt-1">Check your inbox for a verification email.</p>
             </div>
           </div>
         )}
 
         {/* Profile Form */}
-        <div className="glass-card rounded-xl p-6 mb-6">
+        <div className="glass-card rounded-lg border border-card-border p-6">
+          <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <User className="w-5 h-5 text-cyan-400" />
+            Profile Information
+          </h3>
           <form onSubmit={handleSave} className="space-y-6">
+            {/* Avatar Upload */}
+            <div className="space-y-2">
+              <Label>Profile Picture</Label>
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16 border-2 border-primary/30">
+                  <AvatarImage src={avatarUrl || profile?.avatarUrl} alt="Profile" />
+                  <AvatarFallback className="text-lg font-bold">{initials}</AvatarFallback>
+                </Avatar>
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                  <Button type="button" variant="outline" className="gap-2" asChild>
+                    <span>
+                      <Upload className="w-4 h-4" />
+                      Upload Picture
+                    </span>
+                  </Button>
+                </label>
+              </div>
+            </div>
+
             {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
@@ -163,11 +301,23 @@ export default function AccountPage() {
                 type="email"
                 value={profile?.email || ""}
                 disabled
-                className="bg-card border-border opacity-60 cursor-not-allowed"
+                className="bg-muted/50 opacity-70 cursor-not-allowed"
               />
               <p className="text-xs text-muted-foreground">
-                {profile?.isEmailVerified ? "✓ Verified" : "Awaiting verification"}
+                {profile?.isEmailVerified ? "✓ Verified" : "Pending verification"}
               </p>
+            </div>
+
+            {/* Username */}
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="your_username"
+                className="bg-card border-border focus:border-primary"
+              />
             </div>
 
             {/* Full Name */}
@@ -193,6 +343,21 @@ export default function AccountPage() {
                 placeholder="0712345678"
                 className="bg-card border-border focus:border-primary"
               />
+              <p className="text-xs text-muted-foreground">
+                {profile?.isPhoneVerified ? "✓ Verified" : "Not verified"}
+              </p>
+            </div>
+
+            {/* Country */}
+            <div className="space-y-2">
+              <Label htmlFor="country">Country</Label>
+              <Input
+                id="country"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                placeholder="Kenya"
+                className="bg-card border-border focus:border-primary"
+              />
             </div>
 
             {/* Bio */}
@@ -205,6 +370,77 @@ export default function AccountPage() {
                 placeholder="Tell us about yourself..."
                 className="bg-card border-border focus:border-primary min-h-24 resize-none"
               />
+            </div>
+
+            {/* Save Button */}
+            <Button
+              type="submit"
+              disabled={saving}
+              className="w-full bg-primary hover:bg-primary/90 h-11 gap-2"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Save Profile
+                </>
+              )}
+            </Button>
+          </form>
+        </div>
+
+        {/* Preferences Section */}
+        <div className="glass-card rounded-lg border border-card-border p-6">
+          <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <Globe className="w-5 h-5 text-cyan-400" />
+            Preferences
+          </h3>
+          <form onSubmit={handleSave} className="space-y-6">
+            {/* Timezone */}
+            <div className="space-y-2">
+              <Label htmlFor="timezone">Timezone</Label>
+              <Input
+                id="timezone"
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                placeholder="UTC"
+                className="bg-card border-border focus:border-primary"
+              />
+            </div>
+
+            {/* Language */}
+            <div className="space-y-2">
+              <Label htmlFor="language">Preferred Language</Label>
+              <select
+                id="language"
+                value={preferredLanguage}
+                onChange={(e) => setPreferredLanguage(e.target.value)}
+                className="w-full bg-card border border-border rounded-md px-3 py-2 focus:border-primary focus:outline-none"
+              >
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="sw">Kiswahili</option>
+              </select>
+            </div>
+
+            {/* Theme */}
+            <div className="space-y-2">
+              <Label htmlFor="theme">Preferred Theme</Label>
+              <select
+                id="theme"
+                value={preferredTheme}
+                onChange={(e) => setPreferredTheme(e.target.value)}
+                className="w-full bg-card border border-border rounded-md px-3 py-2 focus:border-primary focus:outline-none"
+              >
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+                <option value="auto">Auto</option>
+              </select>
             </div>
 
             {/* Newsletter */}
@@ -223,15 +459,71 @@ export default function AccountPage() {
             <Button
               type="submit"
               disabled={saving}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11"
+              className="w-full bg-primary hover:bg-primary/90 h-11 gap-2"
             >
               {saving ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
               ) : (
-                <><Save className="w-4 h-4 mr-2" /> Save Changes</>
+                <>
+                  <Save className="w-4 h-4" />
+                  Save Preferences
+                </>
               )}
             </Button>
           </form>
+        </div>
+
+        {/* Account Information Card */}
+        <div className="glass-card rounded-lg border border-card-border p-6">
+          <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <Clock className="w-5 h-5 text-cyan-400" />
+            Account Information
+          </h3>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center py-2 border-b border-border/30">
+              <span className="text-muted-foreground">Member Since</span>
+              <span className="font-medium">{profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : "N/A"}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border/30">
+              <span className="text-muted-foreground">Last Updated</span>
+              <span className="font-medium">{profile?.updatedAt ? new Date(profile.updatedAt).toLocaleDateString() : "N/A"}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border/30">
+              <span className="text-muted-foreground">Account ID</span>
+              <span className="font-mono text-sm">{profile?.id?.slice(0, 8)}...</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Security Preview Card */}
+        <div className="glass-card rounded-lg border border-card-border p-6">
+          <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <Lock className="w-5 h-5 text-cyan-400" />
+            Security
+          </h3>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center p-3 bg-background rounded-lg border border-border">
+              <div>
+                <p className="font-medium">Two-Factor Authentication</p>
+                <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
+              </div>
+              <Badge className={profile?.twoFactorEnabled ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-400"}>
+                {profile?.twoFactorEnabled ? "Enabled" : "Disabled"}
+              </Badge>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-background rounded-lg border border-border">
+              <div>
+                <p className="font-medium">Email Verification</p>
+                <p className="text-sm text-muted-foreground">Your email is {profile?.isEmailVerified ? "verified" : "not verified"}</p>
+              </div>
+              <Badge className={profile?.isEmailVerified ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}>
+                {profile?.isEmailVerified ? "Verified" : "Pending"}
+              </Badge>
+            </div>
+          </div>
         </div>
 
         {/* Sign Out Button */}
