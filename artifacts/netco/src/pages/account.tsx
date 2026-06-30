@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 import { apiUrl } from "@/lib/api";
 import { Loader2, LogOut, Save, AlertCircle, Upload, CheckCircle2, Clock, ShoppingCart, Shield, Bell, Lock, User, Globe, Eye, EyeOff, Smartphone, Monitor, CheckCircle } from "lucide-react";
 
@@ -32,6 +33,8 @@ interface UserProfile {
   activePlansCount?: number;
   devicesCount?: number;
   notificationsCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export default function AccountPage() {
@@ -134,27 +137,32 @@ export default function AccountPage() {
 
     setSaving(true);
     try {
-      const res = await fetch(apiUrl(`api/auth/profile/${user.id}`), {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          avatarUrl: avatarUrl || undefined,
-          fullName: fullName || undefined,
-          username: username || undefined,
-          phone: phone || undefined,
-          country: country || undefined,
-          bio: bio || undefined,
-          timezone: timezone || undefined,
-          preferredLanguage: preferredLanguage || undefined,
-          preferredTheme: preferredTheme || undefined,
-          newsletterSubscribed,
-        }),
-      });
+      const { error } = await supabase
+        .from("user_profiles")
+        .update({
+          full_name: fullName || null,
+          phone: phone || null,
+          country: country || null,
+          bio: bio || null,
+          preferred_theme: preferredTheme || null,
+          newsletter_subscribed: newsletterSubscribed,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
 
-      if (!res.ok) throw new Error("Failed to save profile");
+      if (error) throw error;
 
-      const updated = await res.json();
-      setProfile(updated);
+      setProfile({
+        ...profile,
+        fullName,
+        phone,
+        country,
+        bio,
+        preferredTheme,
+        newsletterSubscribed,
+        updatedAt: new Date().toISOString(),
+      } as UserProfile);
+
       toast({
         title: "Profile updated",
         description: "Your changes have been saved.",
@@ -163,6 +171,7 @@ export default function AccountPage() {
       console.error("[v0] Profile save error:", err);
       toast({
         title: "Failed to save profile",
+        description: err instanceof Error ? err.message : "An error occurred",
         variant: "destructive",
       });
     } finally {
