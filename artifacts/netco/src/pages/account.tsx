@@ -10,7 +10,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiUrl } from "@/lib/api";
-import { Loader2, LogOut, Save, AlertCircle, Upload, CheckCircle2, Clock, ShoppingCart, Shield, Bell, Lock, User, Globe, Eye, EyeOff, LogIn, Smartphone, Trash2 } from "lucide-react";
+import { Loader2, LogOut, Save, AlertCircle, Upload, CheckCircle2, Clock, ShoppingCart, Shield, Bell, Lock, User, Globe, Eye, EyeOff } from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -53,16 +53,6 @@ export default function AccountPage() {
   const [preferredLanguage, setPreferredLanguage] = useState("");
   const [preferredTheme, setPreferredTheme] = useState("dark");
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(true);
-  
-  // Security & Preferences
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [orderNotifications, setOrderNotifications] = useState(true);
-  const [planExpiryReminders, setPlanExpiryReminders] = useState(true);
-  const [systemAnnouncements, setSystemAnnouncements] = useState(true);
-  const [marketingEmails, setMarketingEmails] = useState(false);
-  const [activeSessions, setActiveSessions] = useState<any[]>([]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -533,178 +523,6 @@ export default function AccountPage() {
                 {profile?.isEmailVerified ? "Verified" : "Pending"}
               </Badge>
             </div>
-          </div>
-        </div>
-
-        {/* Security Section */}
-        <div className="glass-card rounded-lg border border-card-border p-6">
-          <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-            <Lock className="w-5 h-5 text-cyan-400" />
-            Change Password
-          </h3>
-          <form onSubmit={handleSave} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword">Current Password</Label>
-              <div className="relative">
-                <Input
-                  id="currentPassword"
-                  type={showPassword ? "text" : "password"}
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="bg-card border-border focus:border-primary pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password</Label>
-              <Input
-                id="newPassword"
-                type={showPassword ? "text" : "password"}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="••••••••"
-                className="bg-card border-border focus:border-primary"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type={showPassword ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                className="bg-card border-border focus:border-primary"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={saving || !currentPassword || !newPassword || !confirmPassword}
-              className="w-full bg-primary hover:bg-primary/90 h-11 gap-2"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                <>
-                  <Lock className="w-4 h-4" />
-                  Update Password
-                </>
-              )}
-            </Button>
-          </form>
-        </div>
-
-        {/* Notification Preferences */}
-        <div className="glass-card rounded-lg border border-card-border p-6">
-          <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-            <Bell className="w-5 h-5 text-cyan-400" />
-            Notification Preferences
-          </h3>
-          <form onSubmit={handleSave} className="space-y-4">
-            <div className="flex items-center gap-3 p-3 bg-background rounded-lg border border-border">
-              <Checkbox
-                id="orderNotifications"
-                checked={orderNotifications}
-                onCheckedChange={(checked) => setOrderNotifications(checked === true)}
-              />
-              <Label htmlFor="orderNotifications" className="flex-1 cursor-pointer mb-0">
-                <p className="font-medium">Order Notifications</p>
-                <p className="text-xs text-muted-foreground">Get notified when your orders are processed</p>
-              </Label>
-            </div>
-
-            <div className="flex items-center gap-3 p-3 bg-background rounded-lg border border-border">
-              <Checkbox
-                id="planExpiryReminders"
-                checked={planExpiryReminders}
-                onCheckedChange={(checked) => setPlanExpiryReminders(checked === true)}
-              />
-              <Label htmlFor="planExpiryReminders" className="flex-1 cursor-pointer mb-0">
-                <p className="font-medium">Plan Expiry Reminders</p>
-                <p className="text-xs text-muted-foreground">Be reminded when your plans are about to expire</p>
-              </Label>
-            </div>
-
-            <div className="flex items-center gap-3 p-3 bg-background rounded-lg border border-border">
-              <Checkbox
-                id="systemAnnouncements"
-                checked={systemAnnouncements}
-                onCheckedChange={(checked) => setSystemAnnouncements(checked === true)}
-              />
-              <Label htmlFor="systemAnnouncements" className="flex-1 cursor-pointer mb-0">
-                <p className="font-medium">System Announcements</p>
-                <p className="text-xs text-muted-foreground">Important updates about the NETCO platform</p>
-              </Label>
-            </div>
-
-            <div className="flex items-center gap-3 p-3 bg-background rounded-lg border border-border">
-              <Checkbox
-                id="marketingEmails"
-                checked={marketingEmails}
-                onCheckedChange={(checked) => setMarketingEmails(checked === true)}
-              />
-              <Label htmlFor="marketingEmails" className="flex-1 cursor-pointer mb-0">
-                <p className="font-medium">Marketing Emails</p>
-                <p className="text-xs text-muted-foreground">Offers, promotions, and news from NETCO</p>
-              </Label>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={saving}
-              className="w-full bg-primary hover:bg-primary/90 h-11 gap-2"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Save Preferences
-                </>
-              )}
-            </Button>
-          </form>
-        </div>
-
-        {/* Active Sessions */}
-        <div className="glass-card rounded-lg border border-card-border p-6">
-          <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-            <LogIn className="w-5 h-5 text-cyan-400" />
-            Active Sessions
-          </h3>
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground mb-4">Manage your devices and active sessions</p>
-            {/* Sample Session - In real app, fetch from devices table */}
-            <div className="p-4 bg-background rounded-lg border border-border flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Smartphone className="w-5 h-5 text-cyan-400" />
-                <div>
-                  <p className="font-medium">Current Browser</p>
-                  <p className="text-xs text-muted-foreground">Active right now</p>
-                </div>
-              </div>
-              <Badge className="bg-green-500/20 text-green-400">Active</Badge>
-            </div>
-            <p className="text-xs text-muted-foreground mt-4">
-              To view all your devices and sessions, go to <Link href="/account#devices" className="text-cyan-400 hover:underline">Devices</Link>
-            </p>
           </div>
         </div>
 
