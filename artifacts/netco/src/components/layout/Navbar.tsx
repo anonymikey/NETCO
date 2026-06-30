@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, LogOut, User } from "lucide-react";
+import { Menu, X, LogOut, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "@/components/notification-bell";
@@ -74,7 +74,13 @@ export function Navbar() {
             {loading ? null : user ? (
               <>
                 <NotificationBell />
-                <Link href="/dashboard" data-testid="link-my-plans">
+                <Link href="/account" data-testid="link-profile">
+                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5">
+                    <Settings className="w-4 h-4" />
+                    Profile
+                  </Button>
+                </Link>
+                <Link href="/my-plans" data-testid="link-my-plans">
                   <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5">
                     <User className="w-4 h-4" />
                     My Plans
@@ -143,7 +149,12 @@ export function Navbar() {
               <div className="pt-4 mt-2 border-t border-border space-y-2">
                 {user ? (
                   <>
-                    <Link href="/dashboard">
+                    <Link href="/account">
+                      <Button variant="outline" className="w-full border-border gap-2">
+                        <Settings className="w-4 h-4" /> Profile
+                      </Button>
+                    </Link>
+                    <Link href="/my-plans">
                       <Button variant="outline" className="w-full border-border gap-2">
                         <User className="w-4 h-4" /> My Plans
                       </Button>
