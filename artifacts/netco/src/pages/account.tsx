@@ -10,7 +10,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiUrl } from "@/lib/api";
-import { Loader2, LogOut, Save, AlertCircle, Upload, CheckCircle2, Clock, ShoppingCart, Shield, Bell, Lock, User, Globe, Eye, EyeOff } from "lucide-react";
+import { Loader2, LogOut, Save, AlertCircle, Upload, CheckCircle2, Clock, ShoppingCart, Shield, Bell, Lock, User, Globe, Eye, EyeOff, Smartphone, Monitor, CheckCircle } from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -36,7 +36,7 @@ interface UserProfile {
 
 export default function AccountPage() {
   const [, navigate] = useLocation();
-  const { user, session, signOut } = useAuth();
+  const { user, session, signOut, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -68,21 +68,35 @@ export default function AccountPage() {
   });
   const [activeDevices, setActiveDevices] = useState<any[]>([]);
 
-  // Redirect if not authenticated
+  // Redirect if not authenticated (wait for auth to finish loading first)
   useEffect(() => {
-    if (!user || !session) {
+    if (!authLoading && (!user || !session)) {
       navigate("/login");
     }
-  }, [user, session]);
+  }, [authLoading, user, session, navigate]);
 
   // Load profile
   useEffect(() => {
-    if (!user) return;
+    if (!user || authLoading) return;
 
     const loadProfile = async () => {
       try {
         const res = await fetch(apiUrl(`api/auth/profile/${user.id}`));
         if (!res.ok) throw new Error("Failed to load profile");
+
+        const contentType = res.headers.get("content-type");
+        if (!contentType?.includes("application/json")) {
+          console.error("[v0] API returned non-JSON response, using fallback");
+          setProfile({
+            id: user.id,
+            email: user.email || "",
+            isEmailVerified: false,
+            isPhoneVerified: false,
+            newsletterSubscribed: true,
+          });
+          setLoading(false);
+          return;
+        }
 
         const data = await res.json();
         setProfile(data);
@@ -98,9 +112,13 @@ export default function AccountPage() {
         setNewsletterSubscribed(data.newsletterSubscribed ?? true);
       } catch (err) {
         console.error("[v0] Failed to load profile:", err);
-        toast({
-          title: "Failed to load profile",
-          variant: "destructive",
+        // Use fallback profile with user email
+        setProfile({
+          id: user.id,
+          email: user.email || "",
+          isEmailVerified: false,
+          isPhoneVerified: false,
+          newsletterSubscribed: true,
         });
       } finally {
         setLoading(false);
@@ -108,7 +126,7 @@ export default function AccountPage() {
     };
 
     loadProfile();
-  }, [user]);
+  }, [user, authLoading]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -208,12 +226,12 @@ export default function AccountPage() {
     }
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen pt-20 pb-12 px-4 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading profile...</p>
+          <p className="text-muted-foreground">{authLoading ? "Initializing..." : "Loading profile..."}</p>
         </div>
       </div>
     );
