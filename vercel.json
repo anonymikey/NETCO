@@ -3,6 +3,10 @@
   "outputDirectory": "artifacts/netco/dist",
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://netco.onrender.com/api/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
