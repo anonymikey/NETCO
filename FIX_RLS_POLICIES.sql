@@ -17,26 +17,26 @@ ALTER TABLE email_logs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own notification preferences"
 ON notification_preferences
 FOR SELECT
-USING (auth.uid()::text = user_id::text);
+USING (auth.uid() = user_id);
 
 -- Allow users to insert their own notification preferences
 CREATE POLICY "Users can insert own notification preferences"
 ON notification_preferences
 FOR INSERT
-WITH CHECK (auth.uid()::text = user_id::text);
+WITH CHECK (auth.uid() = user_id);
 
 -- Allow users to update their own notification preferences
 CREATE POLICY "Users can update own notification preferences"
 ON notification_preferences
 FOR UPDATE
-USING (auth.uid()::text = user_id::text)
-WITH CHECK (auth.uid()::text = user_id::text);
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
 
 -- Allow users to delete their own notification preferences
 CREATE POLICY "Users can delete own notification preferences"
 ON notification_preferences
 FOR DELETE
-USING (auth.uid()::text = user_id::text);
+USING (auth.uid() = user_id);
 
 -- ============================================================================
 -- 3. Active Sessions Policies
@@ -46,19 +46,19 @@ USING (auth.uid()::text = user_id::text);
 CREATE POLICY "Users can view own sessions"
 ON active_sessions
 FOR SELECT
-USING (auth.uid()::text = user_id::text);
+USING (auth.uid() = user_id);
 
 -- Allow users to insert their own sessions
 CREATE POLICY "Users can insert own sessions"
 ON active_sessions
 FOR INSERT
-WITH CHECK (auth.uid()::text = user_id::text);
+WITH CHECK (auth.uid() = user_id);
 
 -- Allow users to delete their own sessions
 CREATE POLICY "Users can delete own sessions"
 ON active_sessions
 FOR DELETE
-USING (auth.uid()::text = user_id::text);
+USING (auth.uid() = user_id);
 
 -- ============================================================================
 -- 4. Email Logs Policies
@@ -68,7 +68,7 @@ USING (auth.uid()::text = user_id::text);
 CREATE POLICY "Users can view own email logs"
 ON email_logs
 FOR SELECT
-USING (auth.uid()::text = user_id::text);
+USING (auth.uid() = user_id);
 
 -- Allow service role to insert email logs (admin email sending)
 CREATE POLICY "Service role can insert email logs"
@@ -100,6 +100,12 @@ ON user_profiles
 FOR SELECT
 USING (auth.uid()::text = supabase_uid);
 
+-- Allow users to insert their own profile (first time creation)
+CREATE POLICY "Users can insert own profile"
+ON user_profiles
+FOR INSERT
+WITH CHECK (auth.uid()::text = supabase_uid);
+
 -- ============================================================================
 -- 6. Create Supabase Storage bucket policy for user avatars
 -- ============================================================================
@@ -107,14 +113,11 @@ USING (auth.uid()::text = supabase_uid);
 -- Enable RLS on storage.objects
 ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 
--- Allow users to upload their own avatar
-CREATE POLICY "Users can upload own avatar"
+-- Allow authenticated users to upload avatars
+CREATE POLICY "Users can upload avatars"
 ON storage.objects
 FOR INSERT
-WITH CHECK (
-  bucket_id = 'user-avatars' AND
-  auth.uid()::text = (storage.foldername(name))[1]
-);
+WITH CHECK (bucket_id = 'user-avatars' AND auth.role() = 'authenticated');
 
 -- Allow public read access to avatars
 CREATE POLICY "Public can read avatars"
@@ -122,18 +125,19 @@ ON storage.objects
 FOR SELECT
 USING (bucket_id = 'user-avatars');
 
--- Allow users to delete their own avatar
+-- Allow users to delete their own avatar (by comparing auth.uid with filename prefix)
 CREATE POLICY "Users can delete own avatar"
 ON storage.objects
 FOR DELETE
 USING (
-  bucket_id = 'user-avatars' AND
-  auth.uid()::text = (storage.foldername(name))[1]
+  bucket_id = 'user-avatars' AND 
+  (auth.uid()::text = split_part(name, '/', 1) OR auth.role() = 'service_role')
 );
 
 -- ============================================================================
 -- Notes:
--- - All policies compare auth.uid() (which is UUID) with user_id/supabase_uid (which are now UUID)
+-- - notification_preferences, active_sessions, email_logs: user_id is UUID, compared directly with auth.uid()
+-- - user_profiles: supabase_uid is TEXT, cast auth.uid() to text with ::text
+-- - Storage bucket: simplified policies for authenticated users
 -- - Service role has elevated permissions for admin email sending
--- - Storage bucket allows users to upload to their own folder
 -- ============================================================================
