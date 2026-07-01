@@ -1,13 +1,11 @@
 import { Router, type Request, type Response } from "express";
-import { db } from "@netco/database";
-import { emailLogsTable } from "@netco/database/schema";
+import { db, emailLogsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
-import { authenticateUser } from "../middleware/auth";
 
 const router = Router();
 
 // GET user email logs
-router.get("/:userId", authenticateUser, async (req: Request, res: Response) => {
+router.get("/:userId", async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const { limit = 50, offset = 0 } = req.query;
@@ -44,7 +42,7 @@ router.get("/:userId", authenticateUser, async (req: Request, res: Response) => 
 });
 
 // GET email log by ID
-router.get("/:userId/:emailId", authenticateUser, async (req: Request, res: Response) => {
+router.get("/:userId/:emailId", async (req: Request, res: Response) => {
   try {
     const { userId, emailId } = req.params;
 
@@ -75,7 +73,7 @@ router.get("/:userId/:emailId", authenticateUser, async (req: Request, res: Resp
 });
 
 // Admin: Get all email logs (for dashboard)
-router.get("/admin/all-logs", authenticateUser, async (req: Request, res: Response) => {
+router.get("/admin/all-logs", async (req: Request, res: Response) => {
   try {
     // In real app, check for admin role
     // if (req.userRole !== "admin") return res.status(403).json({ error: "Unauthorized" });

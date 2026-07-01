@@ -1,13 +1,11 @@
 import { Router, type Request, type Response } from "express";
-import { db } from "@netco/database";
-import { activeSessionsTable } from "@netco/database/schema";
-import { eq } from "drizzle-orm";
-import { authenticateUser } from "../middleware/auth";
+import { db, activeSessionsTable } from "@workspace/db";
+import { eq, and } from "drizzle-orm";
 
 const router = Router();
 
 // GET user active sessions
-router.get("/:userId", authenticateUser, async (req: Request, res: Response) => {
+router.get("/:userId", async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
@@ -30,7 +28,7 @@ router.get("/:userId", authenticateUser, async (req: Request, res: Response) => 
 });
 
 // DELETE specific session (logout from device)
-router.delete("/:userId/:sessionId", authenticateUser, async (req: Request, res: Response) => {
+router.delete("/:userId/:sessionId", async (req: Request, res: Response) => {
   try {
     const { userId, sessionId } = req.params;
 
@@ -63,7 +61,7 @@ router.delete("/:userId/:sessionId", authenticateUser, async (req: Request, res:
 });
 
 // DELETE all other sessions (logout from all devices)
-router.post("/:userId/logout-all-other", authenticateUser, async (req: Request, res: Response) => {
+router.post("/:userId/logout-all-other", async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const currentSessionToken = req.headers.authorization?.split("Bearer ")[1];

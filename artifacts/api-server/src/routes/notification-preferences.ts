@@ -1,14 +1,12 @@
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
-import { db } from "@netco/database";
-import { notificationPreferencesTable } from "@netco/database/schema";
+import { db, notificationPreferencesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { authenticateUser } from "../middleware/auth";
 
 const router = Router();
 
 // GET user notification preferences
-router.get("/:userId", authenticateUser, async (req: Request, res: Response) => {
+router.get("/:userId", async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
@@ -50,7 +48,7 @@ router.get("/:userId", authenticateUser, async (req: Request, res: Response) => 
 });
 
 // PATCH user notification preferences
-router.patch("/:userId", authenticateUser, async (req: Request, res: Response) => {
+router.patch("/:userId", async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
