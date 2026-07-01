@@ -250,16 +250,65 @@ export default function AccountPage() {
     }
   };
 
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setAvatarUrl(result);
-    };
-    reader.readAsDataURL(file);
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type and size
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Error", description: "Please upload an image file", variant: "destructive" });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      toast({ title: "Error", description: "Image must be smaller than 5MB", variant: "destructive" });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      // Upload to Supabase storage
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      console.log("[v0] Uploading avatar to Supabase storage:", filePath);
+
+      const { error: uploadError } = await supabase.storage
+        .from("user-avatars")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        console.error("[v0] Avatar upload error:", uploadError);
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data } = supabase.storage
+        .from("user-avatars")
+        .getPublicUrl(filePath);
+
+      const publicUrl = data.publicUrl;
+      console.log("[v0] Avatar uploaded successfully, public URL:", publicUrl);
+
+      setAvatarUrl(publicUrl);
+      
+      toast({
+        title: "Success",
+        description: "Avatar uploaded successfully. Click 'Save Profile' to apply changes.",
+      });
+    } catch (err) {
+      console.error("[v0] Avatar upload failed:", err);
+      toast({
+        title: "Failed to upload avatar",
+        description: err instanceof Error ? err.message : "An error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -429,10 +478,20 @@ export default function AccountPage() {
                     onChange={handleAvatarUpload}
                     className="hidden"
                   />
-                  <Button type="button" variant="outline" className="gap-2" asChild>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="gap-2" 
+                    disabled={uploadingAvatar}
+                    asChild
+                  >
                     <span>
-                      <Upload className="w-4 h-4" />
-                      Upload Picture
+                      {uploadingAvatar ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Upload className="w-4 h-4" />
+                      )}
+                      {uploadingAvatar ? "Uploading..." : "Upload Picture"}
                     </span>
                   </Button>
                 </label>
