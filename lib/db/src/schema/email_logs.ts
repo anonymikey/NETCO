@@ -1,11 +1,11 @@
-import { pgTable, text, timestamp, varchar, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, varchar, boolean, index } from "drizzle-orm/pg-core";
 import { userProfilesTable } from "./user_profiles";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const emailLogsTable = pgTable("email_logs", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => userProfilesTable.id, { onDelete: "cascade" }),
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => userProfilesTable.id, { onDelete: "cascade" }),
   
   // Email details
   recipientEmail: varchar("recipient_email", { length: 255 }).notNull(),

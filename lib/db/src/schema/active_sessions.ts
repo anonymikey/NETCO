@@ -1,11 +1,11 @@
-import { pgTable, text, timestamp, boolean, varchar, index } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, boolean, varchar, index } from "drizzle-orm/pg-core";
 import { userProfilesTable } from "./user_profiles";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const activeSessionsTable = pgTable("active_sessions", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => userProfilesTable.id, { onDelete: "cascade" }),
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => userProfilesTable.id, { onDelete: "cascade" }),
   
   // Device info
   deviceName: varchar("device_name", { length: 255 }).notNull(), // e.g., "Safari on iPhone", "Chrome on Windows"
