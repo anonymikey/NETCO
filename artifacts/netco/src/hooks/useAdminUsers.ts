@@ -70,59 +70,96 @@ export function useAdminUsers() {
       // Fetch user profiles with their associated data
       const { data: profiles, error: profileError } = await supabase
         .from("user_profiles")
-        .select("*");
+        .select("*")
+        .order("created_at", { ascending: false });
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.log("[v0] Profile fetch error:", profileError);
+        throw profileError;
+      }
 
-      // Enrich profiles with order and plan data
+      if (!profiles || profiles.length === 0) {
+        console.log("[v0] No profiles found");
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
+
+      console.log("[v0] Fetched profiles:", profiles.length);
+
+      // Enrich profiles with order and plan data in batches
       const enrichedUsers = await Promise.all(
         (profiles || []).map(async (profile) => {
-          // Get orders count and total spent
-          const { data: orders, error: ordersError } = await supabase
-            .from("orders")
-            .select("amount, status")
-            .eq("user_id", profile.id);
+          try {
+            // Get orders count and total spent
+            const { data: orders = [] } = await supabase
+              .from("orders")
+              .select("amount, status")
+              .eq("user_id", profile.id);
 
-          // Get active plans count
-          const { data: plans, error: plansError } = await supabase
-            .from("user_plans")
-            .select("id")
-            .eq("user_id", profile.id)
-            .eq("status", "active");
+            // Get active plans count
+            const { data: plans = [] } = await supabase
+              .from("user_plans")
+              .select("id")
+              .eq("user_id", profile.id)
+              .eq("status", "active");
 
-          // Get notification count
-          const { data: notifications, error: notifError } = await supabase
-            .from("notifications")
-            .select("id")
-            .eq("user_id", profile.id)
-            .eq("is_read", false);
+            // Get unread notification count
+            const { data: notifications = [] } = await supabase
+              .from("notifications")
+              .select("id")
+              .eq("user_id", profile.id)
+              .eq("is_read", false);
 
-          const ordersCount = orders?.length || 0;
-          const totalSpent = orders?.reduce((sum, o) => sum + (o.amount || 0), 0) || 0;
-          const activePlansCount = plans?.length || 0;
-          const notificationsCount = notifications?.length || 0;
+            const ordersCount = orders?.length || 0;
+            const totalSpent = orders?.reduce((sum, o) => sum + (o.amount || 0), 0) || 0;
+            const activePlansCount = plans?.length || 0;
+            const notificationsCount = notifications?.length || 0;
 
-          return {
-            id: profile?.id || "",
-            username: profile?.username || "user",
-            fullName: profile?.full_name || profile?.username || "User",
-            email: profile?.email || "No email",
-            phone: profile?.phone || "No phone",
-            country: profile?.country || "Not specified",
-            bio: profile?.bio || undefined,
-            ordersCount: ordersCount || 0,
-            activePlansCount: activePlansCount || 0,
-            totalSpent: totalSpent || 0,
-            notificationsCount: notificationsCount || 0,
-            status: (profile?.status || "active") as "active" | "inactive" | "suspended",
-            joinDate: profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : "Unknown",
-            emailVerified: profile?.email_verified ?? false,
-            phoneVerified: profile?.phone_verified ?? false,
-            twoFactorEnabled: profile?.two_factor_enabled ?? false,
-          };
+            return {
+              id: profile?.id || "",
+              username: profile?.username || "user",
+              fullName: profile?.full_name || profile?.username || "User",
+              email: profile?.email || "No email",
+              phone: profile?.phone || "No phone",
+              country: profile?.country || "Not specified",
+              bio: profile?.bio || undefined,
+              ordersCount: ordersCount,
+              activePlansCount: activePlansCount,
+              totalSpent: totalSpent,
+              notificationsCount: notificationsCount,
+              status: (profile?.status || "active") as "active" | "inactive" | "suspended",
+              joinDate: profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : "Unknown",
+              emailVerified: profile?.email_verified ?? false,
+              phoneVerified: profile?.phone_verified ?? false,
+              twoFactorEnabled: profile?.two_factor_enabled ?? false,
+            };
+          } catch (error) {
+            console.error("[v0] Error enriching user", profile.id, error);
+            // Return basic user data even if enrichment fails
+            return {
+              id: profile?.id || "",
+              username: profile?.username || "user",
+              fullName: profile?.full_name || profile?.username || "User",
+              email: profile?.email || "No email",
+              phone: profile?.phone || "No phone",
+              country: profile?.country || "Not specified",
+              bio: profile?.bio || undefined,
+              ordersCount: 0,
+              activePlansCount: 0,
+              totalSpent: 0,
+              notificationsCount: 0,
+              status: (profile?.status || "active") as "active" | "inactive" | "suspended",
+              joinDate: profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : "Unknown",
+              emailVerified: profile?.email_verified ?? false,
+              phoneVerified: profile?.phone_verified ?? false,
+              twoFactorEnabled: profile?.two_factor_enabled ?? false,
+            };
+          }
         })
       );
 
+      console.log("[v0] Enriched users:", enrichedUsers.length);
       setUsers(enrichedUsers);
     } catch (err) {
       console.error("[v0] Error fetching users:", err);

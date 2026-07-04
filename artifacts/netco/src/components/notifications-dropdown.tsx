@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCheck, Loader2, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface NotificationsDropdownProps {
   onClose: () => void;
@@ -13,7 +14,11 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
   const { notifications, isLoading, markAllRead, unreadCount } = useNotifications();
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+      transition={{ duration: 0.2 }}
       data-notification-dropdown
       className="w-96 max-w-[calc(100vw-16px)] bg-card border border-border rounded-lg shadow-2xl flex flex-col max-h-[500px] overflow-hidden"
     >
@@ -47,12 +52,14 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
       ) : (
         <ScrollArea className="flex-1">
           <div className="flex flex-col gap-2 p-3">
-            {notifications.map((notification) => (
-              <NotificationCard key={notification.id} notification={notification} />
-            ))}
+            <AnimatePresence mode="popLayout">
+              {notifications.map((notification) => (
+                <NotificationCard key={notification.id} notification={notification} />
+              ))}
+            </AnimatePresence>
           </div>
         </ScrollArea>
       )}
-    </div>
+    </motion.div>
   );
 }
