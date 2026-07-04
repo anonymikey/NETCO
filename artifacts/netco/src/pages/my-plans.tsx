@@ -4,6 +4,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { motion } from "framer-motion";
+import { PlanCountdownTimer } from "@/components/plan-countdown-timer";
+import { SubscriptionProgress } from "@/components/subscription-progress";
+import { NetworkLogo } from "@/components/network-logo";
 import {
   Download, Eye, RotateCcw, Loader2, AlertCircle, CheckCircle2,
   Clock, Zap, Smartphone, Globe, Calendar, FileText
@@ -180,171 +184,321 @@ export default function MyPlansPage() {
           </TabsList>
 
           {/* Active Plans Tab */}
-          <TabsContent value="active" className="space-y-4">
+          <TabsContent value="active" className="space-y-6">
             {activePlans.length === 0 ? (
-              <div className="glass-card rounded-lg border border-card-border p-8 text-center">
+              <motion.div 
+                className="glass-card rounded-xl border border-card-border p-8 text-center backdrop-blur-sm"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
                 <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto opacity-40 mb-3" />
                 <p className="text-muted-foreground">No active plans. Purchase a plan to get started.</p>
-              </div>
+              </motion.div>
             ) : (
-              activePlans.map((plan) => (
-                <div key={plan.id} className="glass-card rounded-lg border border-card-border p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Network</p>
-                      <Badge className={`${getNetworkColor(plan.network)}`}>{plan.network}</Badge>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Plan</p>
-                      <p className="font-medium">{plan.planName}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Expires In</p>
-                      <p className="font-medium text-cyan-400">{formatTimeLeft(plan.expiryDate)}</p>
-                    </div>
-                    <div className="flex justify-end md:justify-start">
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Status</p>
+              <motion.div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+                {activePlans.map((plan, index) => (
+                  <motion.div
+                    key={plan.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1, duration: 0.4 }}
+                    className="group relative overflow-hidden rounded-2xl border border-primary/20 backdrop-blur-xl bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-6 hover:border-primary/40 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10"
+                  >
+                    {/* Animated background gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 via-transparent to-primary/0 group-hover:from-cyan-500/10 group-hover:to-primary/10 transition-all duration-500 pointer-events-none" />
+                    
+                    <div className="relative z-10 space-y-6">
+                      {/* Header with network logo and title */}
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-4">
+                          <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            className="text-green-400"
+                          >
+                            <NetworkLogo network={plan.network} className="w-16 h-16" />
+                          </motion.div>
+                          <div>
+                            <h3 className="text-xl font-bold text-white mb-1">{plan.planName}</h3>
+                            <p className="text-sm text-muted-foreground">{plan.network} • {plan.duration}</p>
+                          </div>
+                        </div>
                         {getStatusBadge(plan.status, plan.expiryDate)}
                       </div>
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 py-4 border-y border-border/30">
-                    <div className="flex items-center gap-2">
-                      <Smartphone className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm">{plan.appType}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm">{plan.speed}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm">{plan.duration}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Globe className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">{plan.deviceId}</span>
-                    </div>
-                  </div>
+                      {/* Countdown Timer */}
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider">Time Remaining</p>
+                        <div className="bg-secondary/20 rounded-xl p-4 border border-border/30">
+                          <PlanCountdownTimer expiryDate={plan.expiryDate} />
+                        </div>
+                      </div>
 
-                  <div className="flex gap-2 mt-4 flex-wrap">
-                    <Button
-                      size="sm"
-                      className="gap-2"
-                      onClick={() => handleDownloadConfig(plan.id)}
-                    >
-                      <Download className="w-4 h-4" />
-                      Download Config
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-2"
-                      onClick={() => handleViewInstructions(plan.id)}
-                    >
-                      <Eye className="w-4 h-4" />
-                      Instructions
-                    </Button>
-                  </div>
-                </div>
-              ))
+                      {/* Progress Bar */}
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider">Subscription Progress</p>
+                        <SubscriptionProgress expiryDate={plan.expiryDate} createdDate={plan.createdAt} />
+                      </div>
+
+                      {/* Plan Details Grid */}
+                      <div className="grid grid-cols-2 gap-3 py-4 border-t border-border/30">
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Speed</p>
+                          <div className="flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-cyan-400" />
+                            <span className="text-sm font-medium">{plan.speed}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Type</p>
+                          <div className="flex items-center gap-2">
+                            <Smartphone className="w-4 h-4 text-cyan-400" />
+                            <span className="text-sm font-medium">{plan.appType}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Device</p>
+                          <div className="flex items-center gap-2">
+                            <Globe className="w-4 h-4 text-cyan-400" />
+                            <span className="text-sm font-medium text-muted-foreground">{plan.deviceId}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Purchased</p>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-cyan-400" />
+                            <span className="text-sm font-medium">{new Date(plan.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 pt-4 border-t border-border/30">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleDownloadConfig(plan.id)}
+                          className="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-r from-primary to-secondary text-white font-medium text-sm flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-primary/30 transition-all duration-300"
+                        >
+                          <Download className="w-4 h-4" />
+                          Download Config
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleViewInstructions(plan.id)}
+                          className="px-4 py-2.5 rounded-lg border border-primary/30 text-primary font-medium text-sm flex items-center justify-center gap-2 hover:bg-primary/10 transition-all duration-300"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Setup
+                        </motion.button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
             )}
           </TabsContent>
 
           {/* Expiring Soon Tab */}
-          <TabsContent value="expiring" className="space-y-4">
+          <TabsContent value="expiring" className="space-y-6">
             {expiringPlans.length === 0 ? (
-              <div className="glass-card rounded-lg border border-card-border p-8 text-center">
-                <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto opacity-40 mb-3" />
+              <motion.div 
+                className="glass-card rounded-xl border border-card-border p-8 text-center backdrop-blur-sm"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <CheckCircle2 className="w-12 h-12 text-yellow-400 mx-auto opacity-40 mb-3" />
                 <p className="text-muted-foreground">No plans expiring soon.</p>
-              </div>
+              </motion.div>
             ) : (
-              expiringPlans.map((plan) => (
-                <div key={plan.id} className="glass-card rounded-lg border border-yellow-400/20 bg-yellow-400/5 p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Network</p>
-                      <Badge className={`${getNetworkColor(plan.network)}`}>{plan.network}</Badge>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Plan</p>
-                      <p className="font-medium">{plan.planName}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Expires In</p>
-                      <p className="font-medium text-yellow-400">{formatTimeLeft(plan.expiryDate)}</p>
-                    </div>
-                    <div className="flex justify-end md:justify-start">
-                      {getStatusBadge(plan.status, plan.expiryDate)}
-                    </div>
-                  </div>
+              <motion.div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+                {expiringPlans.map((plan, index) => (
+                  <motion.div
+                    key={plan.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1, duration: 0.4 }}
+                    className="group relative overflow-hidden rounded-2xl border border-yellow-400/30 backdrop-blur-xl bg-gradient-to-br from-yellow-400/5 via-background to-orange-500/5 p-6 hover:border-yellow-400/50 transition-all duration-300 hover:shadow-xl hover:shadow-yellow-400/10"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/0 via-transparent to-orange-500/0 group-hover:from-yellow-500/10 group-hover:to-orange-500/10 transition-all duration-500 pointer-events-none" />
+                    
+                    <div className="relative z-10 space-y-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-4">
+                          <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            className="text-yellow-400"
+                          >
+                            <NetworkLogo network={plan.network} className="w-16 h-16" />
+                          </motion.div>
+                          <div>
+                            <h3 className="text-xl font-bold text-white mb-1">{plan.planName}</h3>
+                            <p className="text-sm text-muted-foreground">{plan.network} • {plan.duration}</p>
+                          </div>
+                        </div>
+                        {getStatusBadge(plan.status, plan.expiryDate)}
+                      </div>
 
-                  <div className="flex gap-2 mt-4 flex-wrap">
-                    <Button
-                      size="sm"
-                      className="gap-2 bg-primary hover:bg-primary/90"
-                      onClick={() => handleRenewPlan(plan.id)}
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                      Renew Plan
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-2"
-                      onClick={() => handleDownloadConfig(plan.id)}
-                    >
-                      <Download className="w-4 h-4" />
-                      Download Config
-                    </Button>
-                  </div>
-                </div>
-              ))
+                      <div className="space-y-2 bg-yellow-400/10 rounded-xl p-4 border border-yellow-400/20">
+                        <p className="text-xs text-yellow-400 uppercase tracking-wider font-semibold">Expiring Soon - Renew Now</p>
+                        <div className="bg-secondary/20 rounded-lg p-3 border border-border/30">
+                          <PlanCountdownTimer expiryDate={plan.expiryDate} />
+                        </div>
+                      </div>
+
+                      <SubscriptionProgress expiryDate={plan.expiryDate} createdDate={plan.createdAt} />
+
+                      <div className="grid grid-cols-2 gap-3 py-4 border-t border-border/30">
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Speed</p>
+                          <div className="flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-yellow-400" />
+                            <span className="text-sm font-medium">{plan.speed}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Type</p>
+                          <div className="flex items-center gap-2">
+                            <Smartphone className="w-4 h-4 text-yellow-400" />
+                            <span className="text-sm font-medium">{plan.appType}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Device</p>
+                          <div className="flex items-center gap-2">
+                            <Globe className="w-4 h-4 text-yellow-400" />
+                            <span className="text-sm font-medium text-muted-foreground">{plan.deviceId}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Purchased</p>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-yellow-400" />
+                            <span className="text-sm font-medium">{new Date(plan.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 pt-4 border-t border-border/30">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleRenewPlan(plan.id)}
+                          className="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-r from-yellow-400 to-orange-400 text-background font-medium text-sm flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-yellow-400/30 transition-all duration-300"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                          Renew Plan
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleDownloadConfig(plan.id)}
+                          className="px-4 py-2.5 rounded-lg border border-yellow-400/30 text-yellow-400 font-medium text-sm flex items-center justify-center gap-2 hover:bg-yellow-400/10 transition-all duration-300"
+                        >
+                          <Download className="w-4 h-4" />
+                          Config
+                        </motion.button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
             )}
           </TabsContent>
 
           {/* Expired Tab */}
-          <TabsContent value="expired" className="space-y-4">
+          <TabsContent value="expired" className="space-y-6">
             {expiredPlans.length === 0 ? (
-              <div className="glass-card rounded-lg border border-card-border p-8 text-center">
+              <motion.div 
+                className="glass-card rounded-xl border border-card-border p-8 text-center backdrop-blur-sm"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
                 <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto opacity-40 mb-3" />
                 <p className="text-muted-foreground">No expired plans.</p>
-              </div>
+              </motion.div>
             ) : (
-              expiredPlans.map((plan) => (
-                <div key={plan.id} className="glass-card rounded-lg border border-red-400/20 bg-red-400/5 p-6 opacity-75">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Network</p>
-                      <Badge className={`${getNetworkColor(plan.network)}`}>{plan.network}</Badge>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Plan</p>
-                      <p className="font-medium">{plan.planName}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Expired</p>
-                      <p className="font-medium text-red-400">{formatTimeLeft(plan.expiryDate)}</p>
-                    </div>
-                    <div className="flex justify-end md:justify-start">
-                      {getStatusBadge(plan.status, plan.expiryDate)}
-                    </div>
-                  </div>
+              <motion.div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+                {expiredPlans.map((plan, index) => (
+                  <motion.div
+                    key={plan.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1, duration: 0.4 }}
+                    className="group relative overflow-hidden rounded-2xl border border-red-400/30 backdrop-blur-xl bg-gradient-to-br from-red-400/5 via-background to-rose-500/5 p-6 opacity-80 hover:opacity-100 hover:border-red-400/50 transition-all duration-300 hover:shadow-xl hover:shadow-red-400/10"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-red-500/0 via-transparent to-rose-500/0 group-hover:from-red-500/10 group-hover:to-rose-500/10 transition-all duration-500 pointer-events-none" />
+                    
+                    <div className="relative z-10 space-y-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-4">
+                          <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            className="text-red-400"
+                          >
+                            <NetworkLogo network={plan.network} className="w-16 h-16" />
+                          </motion.div>
+                          <div>
+                            <h3 className="text-xl font-bold text-white mb-1 line-through opacity-70">{plan.planName}</h3>
+                            <p className="text-sm text-muted-foreground">{plan.network} • {plan.duration}</p>
+                          </div>
+                        </div>
+                        {getStatusBadge(plan.status, plan.expiryDate)}
+                      </div>
 
-                  <div className="flex gap-2 mt-4 flex-wrap">
-                    <Button
-                      size="sm"
-                      className="gap-2 bg-primary hover:bg-primary/90"
-                      onClick={() => handleRenewPlan(plan.id)}
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                      Renew Plan
-                    </Button>
-                  </div>
-                </div>
-              ))
+                      <div className="space-y-2 bg-red-400/10 rounded-xl p-4 border border-red-400/20">
+                        <p className="text-xs text-red-400 uppercase tracking-wider font-semibold">This Plan Has Expired</p>
+                        <p className="text-sm text-muted-foreground">Expired on {new Date(plan.expiryDate).toLocaleDateString()}</p>
+                      </div>
+
+                      <SubscriptionProgress expiryDate={plan.expiryDate} createdDate={plan.createdAt} />
+
+                      <div className="grid grid-cols-2 gap-3 py-4 border-t border-border/30 opacity-60">
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Speed</p>
+                          <div className="flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-red-400" />
+                            <span className="text-sm font-medium">{plan.speed}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Type</p>
+                          <div className="flex items-center gap-2">
+                            <Smartphone className="w-4 h-4 text-red-400" />
+                            <span className="text-sm font-medium">{plan.appType}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Device</p>
+                          <div className="flex items-center gap-2">
+                            <Globe className="w-4 h-4 text-red-400" />
+                            <span className="text-sm font-medium text-muted-foreground">{plan.deviceId}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Purchased</p>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-red-400" />
+                            <span className="text-sm font-medium">{new Date(plan.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 pt-4 border-t border-border/30">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleRenewPlan(plan.id)}
+                          className="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-r from-red-400 to-rose-400 text-background font-medium text-sm flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-red-400/30 transition-all duration-300"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                          Renew Now
+                        </motion.button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
             )}
           </TabsContent>
         </Tabs>
