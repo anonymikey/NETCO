@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { PlanCountdownTimer } from "@/components/plan-countdown-timer";
 import { SubscriptionProgress } from "@/components/subscription-progress";
 import { NetworkLogo } from "@/components/network-logo";
+import { ExpiryBadge } from "@/components/expiry-badge";
 import {
   Download, Eye, RotateCcw, Loader2, AlertCircle, CheckCircle2,
   Clock, Zap, Smartphone, Globe, Calendar, FileText
@@ -77,15 +78,7 @@ function formatTimeLeft(expiryDate: string) {
   return `${hours}h ${mins}m remaining`;
 }
 
-function getStatusBadge(status: string, expiryDate: string) {
-  if (status === "expired") {
-    return <Badge className="bg-red-500/20 text-red-400 gap-1"><AlertCircle className="w-3 h-3" /> Expired</Badge>;
-  }
-  if (status === "expiring_soon") {
-    return <Badge className="bg-yellow-500/20 text-yellow-400 gap-1"><Clock className="w-3 h-3" /> Expiring Soon</Badge>;
-  }
-  return <Badge className="bg-green-500/20 text-green-400 gap-1"><CheckCircle2 className="w-3 h-3" /> Active</Badge>;
-}
+
 
 function getNetworkColor(network: string) {
   switch (network.toLowerCase()) {
@@ -222,7 +215,7 @@ export default function MyPlansPage() {
                             <p className="text-sm text-muted-foreground">{plan.network} • {plan.duration}</p>
                           </div>
                         </div>
-                        {getStatusBadge(plan.status, plan.expiryDate)}
+                        <ExpiryBadge expiryDate={plan.expiryDate} />
                       </div>
 
                       {/* Countdown Timer */}
@@ -336,7 +329,7 @@ export default function MyPlansPage() {
                             <p className="text-sm text-muted-foreground">{plan.network} • {plan.duration}</p>
                           </div>
                         </div>
-                        {getStatusBadge(plan.status, plan.expiryDate)}
+                        <ExpiryBadge expiryDate={plan.expiryDate} />
                       </div>
 
                       <div className="space-y-2 bg-yellow-400/10 rounded-xl p-4 border border-yellow-400/20">
@@ -443,7 +436,7 @@ export default function MyPlansPage() {
                             <p className="text-sm text-muted-foreground">{plan.network} • {plan.duration}</p>
                           </div>
                         </div>
-                        {getStatusBadge(plan.status, plan.expiryDate)}
+                        <ExpiryBadge expiryDate={plan.expiryDate} />
                       </div>
 
                       <div className="space-y-2 bg-red-400/10 rounded-xl p-4 border border-red-400/20">
