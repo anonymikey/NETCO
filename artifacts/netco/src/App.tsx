@@ -26,6 +26,7 @@ import Account from "@/pages/account";
 import Admin from "@/pages/admin";
 import OrderStatus from "@/pages/order-status";
 import Terms from "@/pages/terms";
+import MyPlans from "@/pages/my-plans";
 import NotFound from "@/pages/not-found";
 import { useLocation } from "wouter";
 import { Loader2 } from "lucide-react";
@@ -69,6 +70,7 @@ function Router() {
       <Route path="/pricing" component={Pricing} />
       <Route path="/checkout" component={Checkout} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/my-plans" component={MyPlans} />
       <Route path="/account" component={Account} />
       <Route path="/how-to-connect" component={HowToConnect} />
       <Route path="/wifi" component={WiFi} />

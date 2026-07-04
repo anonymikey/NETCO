@@ -560,3 +560,5 @@ export default function MyPlansPage() {
     </div>
   );
 }
+
+export default MyPlansPage;
