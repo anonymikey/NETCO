@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { db, notificationsTable } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
 import { markNotificationRead, markAllNotificationsRead, getNotifications, getUnreadCount } from "../lib/notifications";
+import { checkAndCreatePlanNotifications } from "../lib/plan-notifications";
 
 const router = Router();
 
@@ -95,6 +96,24 @@ router.post("/read-all", async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: "Failed to mark notifications as read" });
+  }
+});
+
+// Check and create plan expiry notifications (can be called by cron job or client)
+router.post("/check-plan-expiry", async (req, res) => {
+  try {
+    // Optional: Add API key or secret check for cron jobs
+    // const apiKey = req.headers["x-api-key"];
+    // if (apiKey !== process.env.CRON_API_KEY) {
+    //   res.status(401).json({ error: "Unauthorized" });
+    //   return;
+    // }
+
+    const result = await checkAndCreatePlanNotifications();
+    res.json(result);
+  } catch (error) {
+    console.error("[v0] Error checking plan notifications:", error);
+    res.status(500).json({ error: "Failed to check plan notifications" });
   }
 });
 

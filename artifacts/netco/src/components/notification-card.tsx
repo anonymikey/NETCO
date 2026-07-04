@@ -2,6 +2,7 @@ import { Notification } from "@workspace/db";
 import { AlertCircle, CheckCircle, Info, AlertTriangle, Package, CreditCard, Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNotifications } from "@/hooks/use-notifications";
+import { motion } from "framer-motion";
 
 interface NotificationCardProps {
   notification: Notification;
@@ -37,7 +38,11 @@ export function NotificationCard({ notification }: NotificationCardProps) {
   };
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 20 }}
+      transition={{ duration: 0.3 }}
       className={cn(
         "flex gap-3 p-3 rounded-lg border transition-all duration-200 cursor-pointer hover:shadow-lg",
         notification.isRead
@@ -59,8 +64,12 @@ export function NotificationCard({ notification }: NotificationCardProps) {
       </div>
 
       {!notification.isRead && (
-        <div className={cn("flex-shrink-0 w-2 h-2 rounded-full mt-2", config.dot)} />
+        <motion.div
+          animate={{ scale: [1, 1.2, 1] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className={cn("flex-shrink-0 w-2 h-2 rounded-full mt-2", config.dot)}
+        />
       )}
-    </div>
+    </motion.div>
   );
 }
