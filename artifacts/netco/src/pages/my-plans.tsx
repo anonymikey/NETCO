@@ -9,9 +9,10 @@ import { PlanCountdownTimer } from "@/components/plan-countdown-timer";
 import { SubscriptionProgress } from "@/components/subscription-progress";
 import { NetworkLogo } from "@/components/network-logo";
 import { ExpiryBadge } from "@/components/expiry-badge";
+import { DeleteConfigModal } from "@/components/delete-config-modal";
 import {
   Download, Eye, RotateCcw, Loader2, AlertCircle, CheckCircle2,
-  Clock, Zap, Smartphone, Globe, Calendar, FileText
+  Clock, Zap, Smartphone, Globe, Calendar, FileText, Trash2
 } from "lucide-react";
 
 interface Plan {
@@ -95,6 +96,9 @@ export default function MyPlansPage() {
   const [loading, setLoading] = useState(true);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [activeTab, setActiveTab] = useState("active");
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; planId?: string; planName?: string }>({
+    isOpen: false,
+  });
 
   useEffect(() => {
     // Simulated loading
@@ -120,6 +124,47 @@ export default function MyPlansPage() {
 
   const handleViewInstructions = (planId: string) => {
     toast({ title: "Info", description: "Opening setup instructions..." });
+  };
+
+  const handleOpenDeleteModal = (plan: Plan) => {
+    // Only allow deletion if plan is expired
+    const expiryDate = new Date(plan.expiryDate);
+    const now = new Date();
+    if (expiryDate < now) {
+      setDeleteModal({
+        isOpen: true,
+        planId: plan.id,
+        planName: plan.planName,
+      });
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.planId) return;
+
+    try {
+      const response = await fetch(`/api/plans/${deleteModal.planId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete plan");
+      }
+
+      // Remove plan from state
+      setPlans((prevPlans) => prevPlans.filter((p) => p.id !== deleteModal.planId));
+
+      // Close modal and show success
+      setDeleteModal({ isOpen: false });
+      toast({
+        title: "Success",
+        description: "Configuration deleted successfully",
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete configuration";
+      throw new Error(message);
+    }
   };
 
   if (loading) {
@@ -487,6 +532,14 @@ export default function MyPlansPage() {
                           <RotateCcw className="w-4 h-4" />
                           Renew Now
                         </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleOpenDeleteModal(plan)}
+                          className="px-4 py-2.5 rounded-lg border border-red-400/30 text-red-400 font-medium text-sm flex items-center justify-center gap-2 hover:bg-red-400/10 transition-all duration-300"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </motion.button>
                       </div>
                     </div>
                   </motion.div>
@@ -496,6 +549,14 @@ export default function MyPlansPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Delete Configuration Modal */}
+      <DeleteConfigModal
+        isOpen={deleteModal.isOpen}
+        planName={deleteModal.planName || "Configuration"}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteModal({ isOpen: false })}
+      />
     </div>
   );
 }

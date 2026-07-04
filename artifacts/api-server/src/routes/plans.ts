@@ -1,9 +1,14 @@
 import { Router } from "express";
+import { z } from "zod";
 import { db, userPlansTable } from "@workspace/db";
 import { eq, or } from "drizzle-orm";
 import { ListPlansQueryParams } from "@workspace/api-zod";
 
 const router = Router();
+
+const DeletePlanSchema = z.object({
+  planId: z.string().uuid(),
+});
 
 router.get("/", async (req, res) => {
   try {
@@ -54,6 +59,50 @@ router.get("/", async (req, res) => {
   } catch (err) {
     req.log.error({ err, query: req.query }, "Error retrieving plans");
     const message = err instanceof Error ? err.message : "Failed to retrieve plans";
+    res.status(500).json({ error: message });
+  }
+});
+
+// DELETE a plan by ID (only allow if expired)
+router.delete("/:planId", async (req, res) => {
+  try {
+    const parsed = DeletePlanSchema.safeParse({ planId: req.params.planId });
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid plan ID" });
+      return;
+    }
+
+    const { planId } = parsed.data;
+
+    // Get the plan first to check if it's expired
+    const [plan] = await db
+      .select()
+      .from(userPlansTable)
+      .where(eq(userPlansTable.id, planId));
+
+    if (!plan) {
+      res.status(404).json({ error: "Plan not found" });
+      return;
+    }
+
+    // Check if plan is expired
+    const now = new Date();
+    const planExpiryDate = plan.expiryDate instanceof Date ? plan.expiryDate : new Date(plan.expiryDate as string);
+    
+    if (planExpiryDate > now) {
+      res.status(403).json({ error: "Cannot delete active plans. Only expired plans can be deleted." });
+      return;
+    }
+
+    // Delete the plan
+    await db
+      .delete(userPlansTable)
+      .where(eq(userPlansTable.id, planId));
+
+    res.json({ success: true, message: "Plan deleted successfully", planId });
+  } catch (err) {
+    req.log.error({ err, planId: req.params.planId }, "Error deleting plan");
+    const message = err instanceof Error ? err.message : "Failed to delete plan";
     res.status(500).json({ error: message });
   }
 });
