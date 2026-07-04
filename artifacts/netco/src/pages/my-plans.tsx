@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useNavigate } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useUserPlans, PlanWithStatus } from "@/hooks/useUserPlans";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,125 +13,144 @@ import { ExpiryBadge } from "@/components/expiry-badge";
 import { DeleteConfigModal } from "@/components/delete-config-modal";
 import {
   Download, Eye, RotateCcw, Loader2, AlertCircle, CheckCircle2,
-  Clock, Zap, Smartphone, Globe, Calendar, FileText, Trash2
+  Clock, Zap, Smartphone, Globe, Calendar, Trash2, AlertTriangle
 } from "lucide-react";
 
-interface Plan {
-  id: string;
-  network: string;
-  planName: string;
-  duration: string;
-  expiryDate: string;
-  status: "active" | "expired" | "expiring_soon";
-  appType: string;
-  deviceId: string;
-  speed: string;
-  createdAt: string;
+function getColorStateClasses(colorState: string) {
+  switch (colorState) {
+    case "green":
+      return "border-green-400/30 bg-green-400/5 from-green-400/5 to-secondary/5 hover:border-green-400/50 hover:shadow-green-400/10";
+    case "yellow":
+      return "border-yellow-400/30 bg-yellow-400/5 from-yellow-400/5 to-orange-500/5 hover:border-yellow-400/50 hover:shadow-yellow-400/10";
+    case "orange":
+      return "border-orange-400/30 bg-orange-400/5 from-orange-400/5 to-red-500/5 hover:border-orange-400/50 hover:shadow-orange-400/10";
+    case "red":
+      return "border-red-400/30 bg-red-400/5 from-red-400/5 to-red-600/5 hover:border-red-400/50 hover:shadow-red-400/10";
+    case "grey":
+      return "border-gray-400/30 bg-gray-400/5 from-gray-400/5 to-gray-500/5 hover:border-gray-400/50 hover:shadow-gray-400/10";
+    default:
+      return "border-primary/20 bg-primary/5 from-primary/5 to-secondary/5 hover:border-primary/40 hover:shadow-primary/10";
+  }
 }
 
-const MOCK_PLANS: Plan[] = [
-  {
-    id: "plan-1",
-    network: "Safaricom",
-    planName: "Premium 100GB",
-    duration: "30 days",
-    expiryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-    status: "expiring_soon",
-    appType: "VPN",
-    deviceId: "device-001",
-    speed: "Unlimited",
-    createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "plan-2",
-    network: "Airtel",
-    planName: "Basic 50GB",
-    duration: "30 days",
-    expiryDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-    status: "active",
-    appType: "VPN",
-    deviceId: "device-002",
-    speed: "High",
-    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "plan-3",
-    network: "Telkom",
-    planName: "Standard 75GB",
-    duration: "30 days",
-    expiryDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    status: "expired",
-    appType: "VPN",
-    deviceId: "device-003",
-    speed: "Medium",
-    createdAt: new Date(Date.now() - 32 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
-
-function formatTimeLeft(expiryDate: string) {
-  const expiry = new Date(expiryDate);
-  const now = new Date();
-  const diff = expiry.getTime() - now.getTime();
-  if (diff <= 0) return "Expired";
-  const days = Math.floor(diff / 86400000);
-  const hours = Math.floor((diff % 86400000) / 3600000);
-  if (days > 0) return `${days}d ${hours}h remaining`;
-  const mins = Math.floor((diff % 3600000) / 60000);
-  return `${hours}h ${mins}m remaining`;
+function getColorStateTimerColor(colorState: string) {
+  switch (colorState) {
+    case "green":
+      return "bg-green-400/20 border-green-400/30";
+    case "yellow":
+      return "bg-yellow-400/20 border-yellow-400/30";
+    case "orange":
+      return "bg-orange-400/20 border-orange-400/30";
+    case "red":
+      return "bg-red-400/20 border-red-400/30";
+    case "grey":
+      return "bg-gray-400/20 border-gray-400/30";
+    default:
+      return "bg-secondary/20 border-border/30";
+  }
 }
 
+function getColorStateIconColor(colorState: string) {
+  switch (colorState) {
+    case "green":
+      return "text-green-400";
+    case "yellow":
+      return "text-yellow-400";
+    case "orange":
+      return "text-orange-400";
+    case "red":
+      return "text-red-400";
+    case "grey":
+      return "text-gray-400";
+    default:
+      return "text-cyan-400";
+  }
+}
 
+function formatTimeRemaining(ms: number) {
+  if (ms <= 0) return "Expired";
+  const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((ms % (1000 * 60)) / 1000);
+  return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+}
 
-function getNetworkColor(network: string) {
-  switch (network.toLowerCase()) {
-    case "safaricom": return "border-green-400/30 bg-green-400/5 text-green-400";
-    case "airtel": return "border-red-400/30 bg-red-400/5 text-red-400";
-    case "telkom": return "border-blue-400/30 bg-blue-400/5 text-blue-400";
-    default: return "border-primary/30 bg-primary/5 text-primary";
+function getWarningMessage(colorState: string, daysUntilDelete?: number): string | null {
+  switch (colorState) {
+    case "yellow":
+      return "Plan expiring soon - consider renewing";
+    case "orange":
+      return "Plan expiring in less than 24 hours";
+    case "red":
+      return "Plan expiring very soon - renew immediately";
+    case "grey":
+      return daysUntilDelete ? `Plan will auto-delete in ${daysUntilDelete} day${daysUntilDelete === 1 ? "" : "s"}` : "Plan has expired";
+    default:
+      return null;
   }
 }
 
 export default function MyPlansPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [plans, setPlans] = useState<Plan[]>([]);
   const [activeTab, setActiveTab] = useState("active");
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; planId?: string; planName?: string }>({
     isOpen: false,
   });
 
-  useEffect(() => {
-    // Simulated loading
-    const timer = setTimeout(() => {
-      setPlans(MOCK_PLANS);
-      setLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, []);
+  const { plans, stats, loading, error, deletePlan } = useUserPlans(user?.id, user?.email);
 
-  const activePlans = plans.filter(p => p.status === "active");
-  const expiringPlans = plans.filter(p => p.status === "expiring_soon");
-  const expiredPlans = plans.filter(p => p.status === "expired");
-  const totalPurchased = plans.length;
+  // Auth guard - redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      // Redirect to login
+      window.location.href = "/login";
+    }
+  }, [user, authLoading]);
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen pt-24 pb-20 px-4 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading plans...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen pt-24 pb-20 px-4 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <AlertCircle className="w-12 h-12 text-red-400" />
+          <p className="text-red-400 font-medium">{error}</p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Filter plans by status
+  const activePlans = plans.filter(p => p.timeRemaining > 0 && p.status === "active");
+  const expiringPlans = plans.filter(p => p.timeRemaining > 0 && p.timeRemaining <= 3 * 24 * 60 * 60 * 1000 && p.status === "active");
+  const expiredPlans = plans.filter(p => p.timeRemaining <= 0);
 
   const handleDownloadConfig = (planId: string) => {
     toast({ title: "Success", description: "Config downloaded successfully" });
   };
 
   const handleRenewPlan = (planId: string) => {
-    toast({ title: "Success", description: "Redirecting to renewal..." });
+    toast({ title: "Info", description: "Redirecting to renewal..." });
   };
 
   const handleViewInstructions = (planId: string) => {
     toast({ title: "Info", description: "Opening setup instructions..." });
   };
 
-  const handleOpenDeleteModal = (plan: Plan) => {
-    // Only allow deletion if plan is expired
-    const expiryDate = new Date(plan.expiryDate);
-    const now = new Date();
-    if (expiryDate < now) {
+  const handleOpenDeleteModal = (plan: PlanWithStatus) => {
+    if (plan.isDeletable) {
       setDeleteModal({
         isOpen: true,
         planId: plan.id,
@@ -143,40 +163,208 @@ export default function MyPlansPage() {
     if (!deleteModal.planId) return;
 
     try {
-      const response = await fetch(`/api/plans/${deleteModal.planId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete plan");
+      const success = await deletePlan(deleteModal.planId);
+      if (success) {
+        setDeleteModal({ isOpen: false });
+        toast({
+          title: "Success",
+          description: "Plan deleted successfully",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete plan",
+          variant: "destructive",
+        });
       }
-
-      // Remove plan from state
-      setPlans((prevPlans) => prevPlans.filter((p) => p.id !== deleteModal.planId));
-
-      // Close modal and show success
-      setDeleteModal({ isOpen: false });
-      toast({
-        title: "Success",
-        description: "Configuration deleted successfully",
-      });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to delete configuration";
-      throw new Error(message);
+      const message = error instanceof Error ? error.message : "Failed to delete plan";
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
     }
   };
 
-  if (loading) {
+  const PlanCard = ({ plan, index }: { plan: PlanWithStatus; index: number }) => {
+    const warningMessage = getWarningMessage(plan.colorState, plan.daysUntilAutoDelete);
+    const colorStateClasses = getColorStateClasses(plan.colorState);
+    const timerColorClasses = getColorStateTimerColor(plan.colorState);
+    const iconColor = getColorStateIconColor(plan.colorState);
+
     return (
-      <div className="min-h-screen pt-24 pb-20 px-4 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading plans...</p>
+      <motion.div
+        key={plan.id}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.1, duration: 0.4 }}
+        className={`group relative overflow-hidden rounded-2xl border backdrop-blur-xl bg-gradient-to-br p-6 hover:transition-all duration-300 hover:shadow-xl ${colorStateClasses}`}
+      >
+        {/* Animated background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-transparent group-hover:from-cyan-500/10 group-hover:to-primary/10 transition-all duration-500 pointer-events-none" />
+
+        <div className="relative z-10 space-y-6">
+          {/* Warning Banner */}
+          {warningMessage && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className={`flex items-center gap-3 p-3 rounded-lg border ${
+                plan.colorState === "grey"
+                  ? "bg-gray-400/10 border-gray-400/30"
+                  : plan.colorState === "red"
+                  ? "bg-red-400/10 border-red-400/30"
+                  : plan.colorState === "orange"
+                  ? "bg-orange-400/10 border-orange-400/30"
+                  : "bg-yellow-400/10 border-yellow-400/30"
+              }`}
+            >
+              {plan.colorState === "grey" ? (
+                <AlertTriangle className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              ) : (
+                <AlertTriangle className={`w-4 h-4 ${iconColor} flex-shrink-0`} />
+              )}
+              <p className={`text-xs font-semibold ${plan.colorState === "grey" ? "text-gray-300" : ""}`}>
+                {warningMessage}
+              </p>
+            </motion.div>
+          )}
+
+          {/* Header with network logo and title */}
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
+              <motion.div whileHover={{ scale: 1.05 }} className={iconColor}>
+                <NetworkLogo network={plan.network} className="w-16 h-16" />
+              </motion.div>
+              <div>
+                <h3 className="text-xl font-bold text-white mb-1">{plan.planName}</h3>
+                <p className="text-sm text-muted-foreground">{plan.network} • {plan.duration}</p>
+              </div>
+            </div>
+            <ExpiryBadge expiryDate={plan.expiryDate} />
+          </div>
+
+          {/* Countdown Timer */}
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Time Remaining</p>
+            <div className={`rounded-xl p-4 border ${timerColorClasses}`}>
+              <div className="grid grid-cols-4 gap-3 text-center">
+                {[
+                  { value: Math.floor(plan.timeRemaining / (1000 * 60 * 60 * 24)), label: "Days" },
+                  { value: Math.floor((plan.timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)), label: "Hours" },
+                  { value: Math.floor((plan.timeRemaining % (1000 * 60 * 60)) / (1000 * 60)), label: "Minutes" },
+                  { value: Math.floor((plan.timeRemaining % (1000 * 60)) / 1000), label: "Seconds" },
+                ].map((time, idx) => (
+                  <div key={idx}>
+                    <p className={`text-lg font-bold ${
+                      plan.colorState === "green" ? "text-green-400" :
+                      plan.colorState === "yellow" ? "text-yellow-400" :
+                      plan.colorState === "orange" ? "text-orange-400" :
+                      plan.colorState === "red" ? "text-red-400" :
+                      "text-gray-400"
+                    }`}>
+                      {String(time.value).padStart(2, "0")}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">{time.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Subscription Progress</p>
+            <SubscriptionProgress expiryDate={plan.expiryDate} createdDate={plan.createdAt} />
+          </div>
+
+          {/* Plan Details Grid */}
+          <div className="grid grid-cols-2 gap-3 py-4 border-t border-border/30">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Speed</p>
+              <div className="flex items-center gap-2">
+                <Zap className={`w-4 h-4 ${iconColor}`} />
+                <span className="text-sm font-medium">{plan.speed}</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Type</p>
+              <div className="flex items-center gap-2">
+                <Smartphone className={`w-4 h-4 ${iconColor}`} />
+                <span className="text-sm font-medium">{plan.appType}</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Device</p>
+              <div className="flex items-center gap-2">
+                <Globe className={`w-4 h-4 ${iconColor}`} />
+                <span className="text-sm font-medium text-muted-foreground">{plan.deviceId}</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Purchased</p>
+              <div className="flex items-center gap-2">
+                <Calendar className={`w-4 h-4 ${iconColor}`} />
+                <span className="text-sm font-medium">{new Date(plan.createdAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 pt-4 border-t border-border/30 flex-wrap">
+            {plan.timeRemaining <= 0 ? (
+              // Show delete and renew buttons for expired plans
+              <>
+                {plan.isDeletable && (
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleOpenDeleteModal(plan)}
+                    className="flex-1 px-4 py-2.5 rounded-lg bg-red-500/20 border border-red-400/30 text-red-400 font-medium text-sm flex items-center justify-center gap-2 hover:bg-red-500/30 transition-all duration-300"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete
+                  </motion.button>
+                )}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleRenewPlan(plan.id)}
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-r from-primary to-secondary text-white font-medium text-sm flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-primary/30 transition-all duration-300"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Renew
+                </motion.button>
+              </>
+            ) : (
+              // Show standard buttons for active plans
+              <>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleDownloadConfig(plan.id)}
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-r from-primary to-secondary text-white font-medium text-sm flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-primary/30 transition-all duration-300"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Config
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleViewInstructions(plan.id)}
+                  className="px-4 py-2.5 rounded-lg border border-primary/30 text-primary font-medium text-sm flex items-center justify-center gap-2 hover:bg-primary/10 transition-all duration-300"
+                >
+                  <Eye className="w-4 h-4" />
+                  Setup
+                </motion.button>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      </motion.div>
     );
-  }
+  };
 
   return (
     <div className="min-h-screen pt-24 pb-20 px-4 bg-background">
@@ -193,22 +381,22 @@ export default function MyPlansPage() {
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div className="glass-card rounded-lg border border-card-border p-4 text-center">
             <CheckCircle2 className="w-6 h-6 text-green-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{activePlans.length}</p>
+            <p className="text-2xl font-bold">{stats.activePlans}</p>
             <p className="text-xs text-muted-foreground mt-1">Active Plans</p>
           </div>
           <div className="glass-card rounded-lg border border-card-border p-4 text-center">
             <Clock className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{expiringPlans.length}</p>
+            <p className="text-2xl font-bold">{stats.expiringPlans}</p>
             <p className="text-xs text-muted-foreground mt-1">Expiring Soon</p>
           </div>
           <div className="glass-card rounded-lg border border-card-border p-4 text-center">
             <AlertCircle className="w-6 h-6 text-red-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{expiredPlans.length}</p>
+            <p className="text-2xl font-bold">{stats.expiredPlans}</p>
             <p className="text-xs text-muted-foreground mt-1">Expired</p>
           </div>
           <div className="glass-card rounded-lg border border-card-border p-4 text-center">
             <Zap className="w-6 h-6 text-cyan-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{totalPurchased}</p>
+            <p className="text-2xl font-bold">{stats.totalPurchased}</p>
             <p className="text-xs text-muted-foreground mt-1">Total Plans</p>
           </div>
         </div>
@@ -216,15 +404,15 @@ export default function MyPlansPage() {
         {/* Plans Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="active">Active ({activePlans.length})</TabsTrigger>
-            <TabsTrigger value="expiring">Expiring ({expiringPlans.length})</TabsTrigger>
-            <TabsTrigger value="expired">Expired ({expiredPlans.length})</TabsTrigger>
+            <TabsTrigger value="active">Active ({stats.activePlans})</TabsTrigger>
+            <TabsTrigger value="expiring">Expiring ({stats.expiringPlans})</TabsTrigger>
+            <TabsTrigger value="expired">Expired ({stats.expiredPlans})</TabsTrigger>
           </TabsList>
 
           {/* Active Plans Tab */}
           <TabsContent value="active" className="space-y-6">
             {activePlans.length === 0 ? (
-              <motion.div 
+              <motion.div
                 className="glass-card rounded-xl border border-card-border p-8 text-center backdrop-blur-sm"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -235,103 +423,7 @@ export default function MyPlansPage() {
             ) : (
               <motion.div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
                 {activePlans.map((plan, index) => (
-                  <motion.div
-                    key={plan.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1, duration: 0.4 }}
-                    className="group relative overflow-hidden rounded-2xl border border-primary/20 backdrop-blur-xl bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-6 hover:border-primary/40 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10"
-                  >
-                    {/* Animated background gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 via-transparent to-primary/0 group-hover:from-cyan-500/10 group-hover:to-primary/10 transition-all duration-500 pointer-events-none" />
-                    
-                    <div className="relative z-10 space-y-6">
-                      {/* Header with network logo and title */}
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-4">
-                          <motion.div
-                            whileHover={{ scale: 1.05 }}
-                            className="text-green-400"
-                          >
-                            <NetworkLogo network={plan.network} className="w-16 h-16" />
-                          </motion.div>
-                          <div>
-                            <h3 className="text-xl font-bold text-white mb-1">{plan.planName}</h3>
-                            <p className="text-sm text-muted-foreground">{plan.network} • {plan.duration}</p>
-                          </div>
-                        </div>
-                        <ExpiryBadge expiryDate={plan.expiryDate} />
-                      </div>
-
-                      {/* Countdown Timer */}
-                      <div className="space-y-2">
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider">Time Remaining</p>
-                        <div className="bg-secondary/20 rounded-xl p-4 border border-border/30">
-                          <PlanCountdownTimer expiryDate={plan.expiryDate} />
-                        </div>
-                      </div>
-
-                      {/* Progress Bar */}
-                      <div className="space-y-2">
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider">Subscription Progress</p>
-                        <SubscriptionProgress expiryDate={plan.expiryDate} createdDate={plan.createdAt} />
-                      </div>
-
-                      {/* Plan Details Grid */}
-                      <div className="grid grid-cols-2 gap-3 py-4 border-t border-border/30">
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Speed</p>
-                          <div className="flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-cyan-400" />
-                            <span className="text-sm font-medium">{plan.speed}</span>
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Type</p>
-                          <div className="flex items-center gap-2">
-                            <Smartphone className="w-4 h-4 text-cyan-400" />
-                            <span className="text-sm font-medium">{plan.appType}</span>
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Device</p>
-                          <div className="flex items-center gap-2">
-                            <Globe className="w-4 h-4 text-cyan-400" />
-                            <span className="text-sm font-medium text-muted-foreground">{plan.deviceId}</span>
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Purchased</p>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-cyan-400" />
-                            <span className="text-sm font-medium">{new Date(plan.createdAt).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-2 pt-4 border-t border-border/30">
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => handleDownloadConfig(plan.id)}
-                          className="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-r from-primary to-secondary text-white font-medium text-sm flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-primary/30 transition-all duration-300"
-                        >
-                          <Download className="w-4 h-4" />
-                          Download Config
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => handleViewInstructions(plan.id)}
-                          className="px-4 py-2.5 rounded-lg border border-primary/30 text-primary font-medium text-sm flex items-center justify-center gap-2 hover:bg-primary/10 transition-all duration-300"
-                        >
-                          <Eye className="w-4 h-4" />
-                          Setup
-                        </motion.button>
-                      </div>
-                    </div>
-                  </motion.div>
+                  <PlanCard key={plan.id} plan={plan} index={index} />
                 ))}
               </motion.div>
             )}
@@ -340,7 +432,7 @@ export default function MyPlansPage() {
           {/* Expiring Soon Tab */}
           <TabsContent value="expiring" className="space-y-6">
             {expiringPlans.length === 0 ? (
-              <motion.div 
+              <motion.div
                 className="glass-card rounded-xl border border-card-border p-8 text-center backdrop-blur-sm"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -351,103 +443,16 @@ export default function MyPlansPage() {
             ) : (
               <motion.div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
                 {expiringPlans.map((plan, index) => (
-                  <motion.div
-                    key={plan.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1, duration: 0.4 }}
-                    className="group relative overflow-hidden rounded-2xl border border-yellow-400/30 backdrop-blur-xl bg-gradient-to-br from-yellow-400/5 via-background to-orange-500/5 p-6 hover:border-yellow-400/50 transition-all duration-300 hover:shadow-xl hover:shadow-yellow-400/10"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/0 via-transparent to-orange-500/0 group-hover:from-yellow-500/10 group-hover:to-orange-500/10 transition-all duration-500 pointer-events-none" />
-                    
-                    <div className="relative z-10 space-y-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-4">
-                          <motion.div
-                            whileHover={{ scale: 1.05 }}
-                            className="text-yellow-400"
-                          >
-                            <NetworkLogo network={plan.network} className="w-16 h-16" />
-                          </motion.div>
-                          <div>
-                            <h3 className="text-xl font-bold text-white mb-1">{plan.planName}</h3>
-                            <p className="text-sm text-muted-foreground">{plan.network} • {plan.duration}</p>
-                          </div>
-                        </div>
-                        <ExpiryBadge expiryDate={plan.expiryDate} />
-                      </div>
-
-                      <div className="space-y-2 bg-yellow-400/10 rounded-xl p-4 border border-yellow-400/20">
-                        <p className="text-xs text-yellow-400 uppercase tracking-wider font-semibold">Expiring Soon - Renew Now</p>
-                        <div className="bg-secondary/20 rounded-lg p-3 border border-border/30">
-                          <PlanCountdownTimer expiryDate={plan.expiryDate} />
-                        </div>
-                      </div>
-
-                      <SubscriptionProgress expiryDate={plan.expiryDate} createdDate={plan.createdAt} />
-
-                      <div className="grid grid-cols-2 gap-3 py-4 border-t border-border/30">
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Speed</p>
-                          <div className="flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-yellow-400" />
-                            <span className="text-sm font-medium">{plan.speed}</span>
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Type</p>
-                          <div className="flex items-center gap-2">
-                            <Smartphone className="w-4 h-4 text-yellow-400" />
-                            <span className="text-sm font-medium">{plan.appType}</span>
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Device</p>
-                          <div className="flex items-center gap-2">
-                            <Globe className="w-4 h-4 text-yellow-400" />
-                            <span className="text-sm font-medium text-muted-foreground">{plan.deviceId}</span>
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Purchased</p>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-yellow-400" />
-                            <span className="text-sm font-medium">{new Date(plan.createdAt).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 pt-4 border-t border-border/30">
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => handleRenewPlan(plan.id)}
-                          className="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-r from-yellow-400 to-orange-400 text-background font-medium text-sm flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-yellow-400/30 transition-all duration-300"
-                        >
-                          <RotateCcw className="w-4 h-4" />
-                          Renew Plan
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => handleDownloadConfig(plan.id)}
-                          className="px-4 py-2.5 rounded-lg border border-yellow-400/30 text-yellow-400 font-medium text-sm flex items-center justify-center gap-2 hover:bg-yellow-400/10 transition-all duration-300"
-                        >
-                          <Download className="w-4 h-4" />
-                          Config
-                        </motion.button>
-                      </div>
-                    </div>
-                  </motion.div>
+                  <PlanCard key={plan.id} plan={plan} index={index} />
                 ))}
               </motion.div>
             )}
           </TabsContent>
 
-          {/* Expired Tab */}
+          {/* Expired Plans Tab */}
           <TabsContent value="expired" className="space-y-6">
             {expiredPlans.length === 0 ? (
-              <motion.div 
+              <motion.div
                 className="glass-card rounded-xl border border-card-border p-8 text-center backdrop-blur-sm"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -458,91 +463,7 @@ export default function MyPlansPage() {
             ) : (
               <motion.div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
                 {expiredPlans.map((plan, index) => (
-                  <motion.div
-                    key={plan.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1, duration: 0.4 }}
-                    className="group relative overflow-hidden rounded-2xl border border-red-400/30 backdrop-blur-xl bg-gradient-to-br from-red-400/5 via-background to-rose-500/5 p-6 opacity-80 hover:opacity-100 hover:border-red-400/50 transition-all duration-300 hover:shadow-xl hover:shadow-red-400/10"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-red-500/0 via-transparent to-rose-500/0 group-hover:from-red-500/10 group-hover:to-rose-500/10 transition-all duration-500 pointer-events-none" />
-                    
-                    <div className="relative z-10 space-y-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-4">
-                          <motion.div
-                            whileHover={{ scale: 1.05 }}
-                            className="text-red-400"
-                          >
-                            <NetworkLogo network={plan.network} className="w-16 h-16" />
-                          </motion.div>
-                          <div>
-                            <h3 className="text-xl font-bold text-white mb-1 line-through opacity-70">{plan.planName}</h3>
-                            <p className="text-sm text-muted-foreground">{plan.network} • {plan.duration}</p>
-                          </div>
-                        </div>
-                        <ExpiryBadge expiryDate={plan.expiryDate} />
-                      </div>
-
-                      <div className="space-y-2 bg-red-400/10 rounded-xl p-4 border border-red-400/20">
-                        <p className="text-xs text-red-400 uppercase tracking-wider font-semibold">This Plan Has Expired</p>
-                        <p className="text-sm text-muted-foreground">Expired on {new Date(plan.expiryDate).toLocaleDateString()}</p>
-                      </div>
-
-                      <SubscriptionProgress expiryDate={plan.expiryDate} createdDate={plan.createdAt} />
-
-                      <div className="grid grid-cols-2 gap-3 py-4 border-t border-border/30 opacity-60">
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Speed</p>
-                          <div className="flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-red-400" />
-                            <span className="text-sm font-medium">{plan.speed}</span>
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Type</p>
-                          <div className="flex items-center gap-2">
-                            <Smartphone className="w-4 h-4 text-red-400" />
-                            <span className="text-sm font-medium">{plan.appType}</span>
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Device</p>
-                          <div className="flex items-center gap-2">
-                            <Globe className="w-4 h-4 text-red-400" />
-                            <span className="text-sm font-medium text-muted-foreground">{plan.deviceId}</span>
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Purchased</p>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-red-400" />
-                            <span className="text-sm font-medium">{new Date(plan.createdAt).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 pt-4 border-t border-border/30">
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => handleRenewPlan(plan.id)}
-                          className="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-r from-red-400 to-rose-400 text-background font-medium text-sm flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-red-400/30 transition-all duration-300"
-                        >
-                          <RotateCcw className="w-4 h-4" />
-                          Renew Now
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => handleOpenDeleteModal(plan)}
-                          className="px-4 py-2.5 rounded-lg border border-red-400/30 text-red-400 font-medium text-sm flex items-center justify-center gap-2 hover:bg-red-400/10 transition-all duration-300"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </motion.button>
-                      </div>
-                    </div>
-                  </motion.div>
+                  <PlanCard key={plan.id} plan={plan} index={index} />
                 ))}
               </motion.div>
             )}
@@ -550,10 +471,10 @@ export default function MyPlansPage() {
         </Tabs>
       </div>
 
-      {/* Delete Configuration Modal */}
+      {/* Delete Modal */}
       <DeleteConfigModal
         isOpen={deleteModal.isOpen}
-        planName={deleteModal.planName || "Configuration"}
+        configName={deleteModal.planName}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteModal({ isOpen: false })}
       />
