@@ -269,19 +269,37 @@ export default function AccountPage() {
 
     setUploadingAvatar(true);
     try {
+      // Get authenticated user
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
+
+      console.log("[v0] Auth UID:", authUser?.id);
+      console.log("[v0] Auth Email:", authUser?.email);
+
       // Upload to Supabase storage
       const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
 
-      console.log("[v0] Uploading avatar to Supabase storage:", filePath);
+      console.log("[v0] Bucket:", "user-avatars");
+      console.log("[v0] Path:", filePath);
+      console.log("[v0] User ID from context:", user.id);
+      console.log("[v0] File type:", file.type);
+      console.log("[v0] File size:", file.size);
 
-      const { error: uploadError } = await supabase.storage
+      const result = await supabase.storage
         .from("user-avatars")
         .upload(filePath, file, { upsert: true });
 
+      console.log("[v0] Upload result:", result);
+
+      const { error: uploadError } = result;
+
       if (uploadError) {
         console.error("[v0] Avatar upload error:", uploadError);
+        console.error("[v0] Error message:", uploadError.message);
+        console.error("[v0] Error status:", uploadError.status);
         throw uploadError;
       }
 
