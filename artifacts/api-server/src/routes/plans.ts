@@ -3,23 +3,13 @@ import { z } from "zod";
 import { db, userPlansTable } from "@workspace/db";
 import { eq, or, and, lt } from "drizzle-orm";
 import { ListPlansQueryParams } from "@workspace/api-zod";
+import { verifyJWT, checkPlanOwnership } from "@/lib/auth";
 
 const router = Router();
 
 const DeletePlanSchema = z.object({
   planId: z.string().uuid(),
 });
-
-// Middleware to extract userId from Authorization header
-function extractUserId(req: any): string | null {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return null;
-  }
-  // In production, decode JWT token here
-  // For now, userId should be passed in header or token claim
-  return req.headers["x-user-id"] || null;
-}
 
 router.get("/", async (req, res) => {
   try {
@@ -75,13 +65,9 @@ router.get("/", async (req, res) => {
 });
 
 // GET user's plans (authenticated endpoint)
-router.get("/user-plans", async (req, res) => {
+router.get("/user-plans", verifyJWT, async (req, res) => {
   try {
-    const userId = extractUserId(req);
-    if (!userId) {
-      res.status(401).json({ error: "Unauthorized: User ID not provided" });
-      return;
-    }
+    const userId = (req as any).userId;
 
     const plans = await db
       .select()
@@ -124,32 +110,15 @@ router.get("/user-plans", async (req, res) => {
 });
 
 // DELETE a plan by ID (only allow if expired, cancelled, or refunded)
-router.delete("/:planId", async (req, res) => {
+router.delete("/:planId", verifyJWT, checkPlanOwnership, async (req, res) => {
   try {
-    const userId = extractUserId(req);
-    if (!userId) {
-      res.status(401).json({ error: "Unauthorized: User ID not provided" });
-      return;
-    }
-
     const parsed = DeletePlanSchema.safeParse({ planId: req.params.planId });
     if (!parsed.success) {
       res.status(400).json({ error: "Invalid plan ID" });
       return;
     }
 
-    const { planId } = parsed.data;
-
-    // Get the plan first to check eligibility for deletion
-    const [plan] = await db
-      .select()
-      .from(userPlansTable)
-      .where(and(eq(userPlansTable.id, planId), eq(userPlansTable.userId, userId)));
-
-    if (!plan) {
-      res.status(404).json({ error: "Plan not found" });
-      return;
-    }
+    const plan = (req as any).plan;
 
     // Only allow deletion for expired, cancelled, or refunded plans
     const now = new Date();
@@ -167,12 +136,63 @@ router.delete("/:planId", async (req, res) => {
     // Delete the plan
     await db
       .delete(userPlansTable)
-      .where(eq(userPlansTable.id, planId));
+      .where(eq(userPlansTable.id, plan.id));
 
-    res.json({ success: true, message: "Plan deleted successfully", planId });
+    res.json({ success: true, message: "Plan deleted successfully", planId: plan.id });
   } catch (err) {
     req.log.error({ err, planId: req.params.planId }, "Error deleting plan");
     const message = err instanceof Error ? err.message : "Failed to delete plan";
+    res.status(500).json({ error: message });
+  }
+});
+
+// GET plan config/instructions (download config or view instructions)
+router.get("/:planId/config", verifyJWT, checkPlanOwnership, async (req, res) => {
+  try {
+    const plan = (req as any).plan;
+
+    // Check if plan is still active
+    const now = new Date();
+    const planExpiryDate = plan.expiryDate instanceof Date ? plan.expiryDate : new Date(plan.expiryDate as string);
+    if (planExpiryDate < now) {
+      res.status(403).json({ error: "Cannot download config for expired plan" });
+      return;
+    }
+
+    res.json({
+      id: plan.id,
+      configUrl: plan.configUrl,
+      fileExtension: plan.fileExtension,
+      instructions: plan.instructions,
+      speed: plan.speed,
+      appType: plan.appType,
+      network: plan.network,
+    });
+  } catch (err) {
+    req.log.error({ err, planId: req.params.planId }, "Error retrieving plan config");
+    const message = err instanceof Error ? err.message : "Failed to retrieve plan config";
+    res.status(500).json({ error: message });
+  }
+});
+
+// POST to renew/extend a plan
+router.post("/:planId/renew", verifyJWT, checkPlanOwnership, async (req, res) => {
+  try {
+    const plan = (req as any).plan;
+
+    // For now, return info about renewing - actual renewal logic would be in orders flow
+    res.json({
+      message: "Plan renewal initiated",
+      planId: plan.id,
+      planName: plan.planName,
+      network: plan.network,
+      currentExpiry: plan.expiryDate,
+      // In production, this would redirect to a checkout/renewal page
+      renewalUrl: `/checkout?planId=${plan.id}&type=renew`,
+    });
+  } catch (err) {
+    req.log.error({ err, planId: req.params.planId }, "Error renewing plan");
+    const message = err instanceof Error ? err.message : "Failed to renew plan";
     res.status(500).json({ error: message });
   }
 });

@@ -17,6 +17,7 @@ import notificationPreferencesRouter from "./notification-preferences";
 import activeSessionsRouter from "./active-sessions";
 import emailLogsRouter from "./email-logs";
 import adminEmailNotificationsRouter from "./admin-email-notifications";
+import cleanupRouter from "./cleanup";
 
 const router: IRouter = Router();
 
@@ -27,6 +28,7 @@ router.use("/payment", paymentRouter);
 router.use("/plans", plansRouter);
 router.use("/contact", contactRouter);
 router.use("/notifications", notificationsRouter);
+router.use("/cleanup", cleanupRouter);
 router.use(statsRouter);
 router.use("/admin", adminServersRouter);
 router.use("/admin", statsRouter);
