@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db, userPlansTable } from "@workspace/db";
 import { eq, or, and, lt } from "drizzle-orm";
 import { ListPlansQueryParams } from "@workspace/api-zod";
-import { verifyJWT, checkPlanOwnership } from "@/lib/auth";
+import { verifyJWT, checkPlanOwnership } from "../lib/auth";
 
 const router = Router();
 
