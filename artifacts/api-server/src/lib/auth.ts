@@ -25,8 +25,8 @@ export async function verifyJWT(req: Request, res: Response, next: NextFunction)
 
     const token = authHeader.slice(7); // Remove "Bearer " prefix
 
-    // Verify token with Supabase
-    const { data: { user }, error } = await supabase.auth.admin.getUserByToken(token);
+    // Verify token with Supabase using getUser() method
+    const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
       console.error("[v0] JWT verification failed:", error);
