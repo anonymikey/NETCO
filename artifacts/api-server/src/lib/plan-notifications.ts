@@ -1,5 +1,5 @@
-import { db, userPlansTable } from "@workspace/db";
-import { lt, gt, and } from "drizzle-orm";
+import { db, userPlansTable, planNotificationTrackingTable } from "@workspace/db";
+import { lt, gt, and, eq } from "drizzle-orm";
 import { createNotification } from "./notifications";
 import { randomUUID } from "crypto";
 
@@ -145,34 +145,57 @@ export function getNotificationMessage(
 }
 
 /**
- * Check and create plan expiry notifications
- * Should be called periodically (e.g., every minute via cron or interval)
+ * Check and create plan expiry notifications (idempotent)
+ * This function is safe to call multiple times - it will only create each notification once
+ * Should be called periodically (e.g., every 5 minutes via frontend polling or cron)
  */
 export async function checkAndCreatePlanNotifications() {
   try {
     const plansToNotify = await getPlanExpiryNotifications();
 
     let createdCount = 0;
+    const skippedCount = plansToNotify.length - createdCount;
+
     for (const plan of plansToNotify) {
-      const { title, message } = getNotificationMessage(
-        plan.trigger,
-        plan.network,
-        plan.planName
-      );
+      try {
+        // Check if notification already exists for this plan/trigger combo
+        const alreadyCreated = await hasNotificationBeenCreated(plan.planId, plan.trigger);
+        
+        if (alreadyCreated) {
+          // Skip creating duplicate notification
+          continue;
+        }
 
-      // Determine notification type based on trigger
-      let notificationType: "warning" | "error" | "plan" = "plan";
-      if (plan.trigger === "1_hour") notificationType = "error";
-      if (plan.trigger === "24_hours") notificationType = "warning";
-      if (plan.trigger === "expired") notificationType = "error";
+        const { title, message } = getNotificationMessage(
+          plan.trigger,
+          plan.network,
+          plan.planName
+        );
 
-      await createNotification(plan.userId, title, message, notificationType);
-      createdCount++;
+        // Determine notification type based on trigger
+        let notificationType: "warning" | "error" | "plan" = "plan";
+        if (plan.trigger === "1_hour") notificationType = "error";
+        if (plan.trigger === "24_hours") notificationType = "warning";
+        if (plan.trigger === "expired") notificationType = "error";
+
+        // Create the notification
+        await createNotification(plan.userId, title, message, notificationType);
+        
+        // Record that we've created this notification
+        await recordNotificationCreated(plan.planId, plan.userId, plan.trigger, plan.expiryDate);
+        
+        createdCount++;
+      } catch (planError) {
+        console.error(`[v0] Error creating notification for plan ${plan.planId}:`, planError);
+        // Continue with next plan instead of failing completely
+      }
     }
 
     return {
       success: true,
       createdCount,
+      checkedCount: plansToNotify.length,
+      skippedCount: plansToNotify.length - createdCount,
       timestamp: new Date(),
     };
   } catch (error) {
@@ -182,17 +205,41 @@ export async function checkAndCreatePlanNotifications() {
 }
 
 /**
- * Check if a plan notification has already been created recently
- * to avoid duplicate notifications
+ * Check if a notification for this plan and trigger type has already been created
+ * This prevents duplicate notifications for the same plan/trigger combination
  */
-export async function hasRecentNotification(
-  userId: string,
+export async function hasNotificationBeenCreated(
   planId: string,
-  trigger: NotificationTrigger,
-  withinMinutes: number = 60
+  trigger: NotificationTrigger
 ): Promise<boolean> {
-  // This is a simple check - in production, you might want to track
-  // which notifications have been sent in a separate table
-  // For now, we'll return false to allow notifications to be created
-  return false;
+  const [existing] = await db
+    .select()
+    .from(planNotificationTrackingTable)
+    .where(
+      and(
+        eq(planNotificationTrackingTable.planId, planId),
+        eq(planNotificationTrackingTable.trigger, trigger)
+      )
+    )
+    .limit(1);
+
+  return !!existing;
+}
+
+/**
+ * Record that a notification has been created for a plan
+ */
+export async function recordNotificationCreated(
+  planId: string,
+  userId: string,
+  trigger: NotificationTrigger,
+  expiryDate: Date
+): Promise<void> {
+  await db.insert(planNotificationTrackingTable).values({
+    id: randomUUID(),
+    planId,
+    userId,
+    trigger,
+    expiryDateSnapshot: expiryDate,
+  });
 }

@@ -5,5 +5,6 @@ export * from "./config_servers";
 export * from "./user_profiles";
 export * from "./notifications";
 export * from "./notification_preferences";
+export * from "./plan_notification_tracking";
 export * from "./active_sessions";
 export * from "./email_logs";

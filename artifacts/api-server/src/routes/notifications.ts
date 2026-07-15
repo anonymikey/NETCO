@@ -3,6 +3,7 @@ import { db, notificationsTable } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
 import { markNotificationRead, markAllNotificationsRead, getNotifications, getUnreadCount } from "../lib/notifications";
 import { checkAndCreatePlanNotifications } from "../lib/plan-notifications";
+import { verifyJWT } from "../lib/auth";
 
 const router = Router();
 
@@ -99,16 +100,10 @@ router.post("/read-all", async (req, res) => {
   }
 });
 
-// Check and create plan expiry notifications (can be called by cron job or client)
-router.post("/check-plan-expiry", async (req, res) => {
+// Check and create plan expiry notifications (can be called by authenticated client or cron job)
+// Idempotent: Safe to call multiple times, won't create duplicate notifications
+router.post("/check-plan-expiry", verifyJWT, async (req, res) => {
   try {
-    // Optional: Add API key or secret check for cron jobs
-    // const apiKey = req.headers["x-api-key"];
-    // if (apiKey !== process.env.CRON_API_KEY) {
-    //   res.status(401).json({ error: "Unauthorized" });
-    //   return;
-    // }
-
     const result = await checkAndCreatePlanNotifications();
     res.json(result);
   } catch (error) {
