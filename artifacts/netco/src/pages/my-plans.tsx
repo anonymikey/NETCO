@@ -200,14 +200,10 @@ export default function MyPlansPage() {
 
       const renewalData = await response.json();
       
-      // For now, show info. In production, redirect to checkout
       toast({ 
         title: "Renewal Ready", 
-        description: `Ready to renew ${renewalData.planName}. Redirecting to checkout...` 
+        description: `Ready to renew ${renewalData.planName}. Checkout page will open when integrated.` 
       });
-      
-      // TODO: Redirect to renewal checkout page
-      // window.location.href = renewalData.renewalUrl;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to renew plan";
       toast({ title: "Error", description: message, variant: "destructive" });

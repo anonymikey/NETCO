@@ -63,16 +63,27 @@ export async function checkPlanOwnership(req: Request, res: Response, next: Next
     }
 
     // Import here to avoid circular dependency
-    const { db, userPlansTable } = await import("@workspace/db");
-    const { eq, and } = await import("drizzle-orm");
+    const { db: dbModule, userPlansTable: table } = await import("@workspace/db");
+    const { eq: eqFunc, and: andFunc } = await import("drizzle-orm");
 
-    const [plan] = await db
+    // First check if plan exists for this user
+    const [plan] = await dbModule
       .select()
-      .from(userPlansTable)
-      .where(and(eq(userPlansTable.id, planId), eq(userPlansTable.userId, userId)));
+      .from(table)
+      .where(andFunc(eqFunc(table.id, planId), eqFunc(table.userId, userId)));
 
     if (!plan) {
-      res.status(403).json({ error: "You do not have access to this plan" });
+      // Check if plan exists for any user to distinguish 404 from 403
+      const [anyPlan] = await dbModule
+        .select()
+        .from(table)
+        .where(eqFunc(table.id, planId));
+      
+      if (!anyPlan) {
+        res.status(404).json({ error: "Plan not found" });
+      } else {
+        res.status(403).json({ error: "You do not have access to this plan" });
+      }
       return;
     }
 

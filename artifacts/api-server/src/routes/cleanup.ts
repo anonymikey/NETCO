@@ -57,7 +57,6 @@ router.post("/", async (req, res) => {
       success: true,
       message: `Successfully deleted ${deletedCount} expired plan(s)`,
       deletedCount,
-      deletedPlanIds: deleteIds,
     });
   } catch (err) {
     req.log.error({ err }, "Error during cleanup");
