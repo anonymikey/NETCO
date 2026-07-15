@@ -92,14 +92,25 @@ function getWarningMessage(colorState: string, daysUntilDelete?: number): string
 }
 
 export default function MyPlansPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, sessionExpired } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("active");
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; planId?: string; planName?: string }>({
     isOpen: false,
   });
 
-  const { plans, stats, loading, error, deletePlan } = useUserPlans(user?.id, user?.email);
+  const { plans, stats, loading, error, deletePlan } = useUserPlans(user?.id);
+
+  // Show notification when session expires
+  useEffect(() => {
+    if (sessionExpired) {
+      toast({
+        title: "Session Expired",
+        description: "Your session has expired. Please log in again.",
+        variant: "destructive",
+      });
+    }
+  }, [sessionExpired, toast]);
 
   // Auth guard - redirect if not authenticated
   useEffect(() => {
@@ -137,16 +148,101 @@ export default function MyPlansPage() {
   const expiringPlans = plans.filter(p => p.timeRemaining > 0 && p.timeRemaining <= 3 * 24 * 60 * 60 * 1000 && p.status === "active");
   const expiredPlans = plans.filter(p => p.timeRemaining <= 0);
 
-  const handleDownloadConfig = (planId: string) => {
-    toast({ title: "Success", description: "Config downloaded successfully" });
+  const handleDownloadConfig = async (planId: string) => {
+    try {
+      const { supabase } = await import("@/lib/supabase");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast({ title: "Error", description: "Please log in to download config", variant: "destructive" });
+        return;
+      }
+
+      const response = await fetch(`/api/plans/${planId}/config`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get config");
+      }
+
+      const configData = await response.json();
+
+      if (configData.configUrl) {
+        // Open config URL in new tab for download
+        window.open(configData.configUrl, "_blank");
+        toast({ title: "Success", description: "Config file opening in new tab" });
+      } else {
+        toast({ title: "Info", description: "Config will be available soon. Please check back later.", variant: "default" });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to download config";
+      toast({ title: "Error", description: message, variant: "destructive" });
+    }
   };
 
-  const handleRenewPlan = (planId: string) => {
-    toast({ title: "Info", description: "Redirecting to renewal..." });
+  const handleRenewPlan = async (planId: string) => {
+    try {
+      const { supabase } = await import("@/lib/supabase");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast({ title: "Error", description: "Please log in to renew plan", variant: "destructive" });
+        return;
+      }
+
+      const response = await fetch(`/api/plans/${planId}/renew`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to initiate renewal");
+      }
+
+      const renewalData = await response.json();
+      
+      toast({ 
+        title: "Renewal Ready", 
+        description: `Ready to renew ${renewalData.planName}. Checkout page will open when integrated.` 
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to renew plan";
+      toast({ title: "Error", description: message, variant: "destructive" });
+    }
   };
 
-  const handleViewInstructions = (planId: string) => {
-    toast({ title: "Info", description: "Opening setup instructions..." });
+  const handleViewInstructions = async (planId: string) => {
+    try {
+      const { supabase } = await import("@/lib/supabase");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast({ title: "Error", description: "Please log in to view instructions", variant: "destructive" });
+        return;
+      }
+
+      const response = await fetch(`/api/plans/${planId}/config`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get instructions");
+      }
+
+      const configData = await response.json();
+
+      if (configData.instructions) {
+        // Show instructions in a modal or new tab/window
+        // For now, show as alert - could be enhanced with a modal component
+        toast({ 
+          title: `Setup Instructions for ${configData.network}`, 
+          description: configData.instructions,
+        });
+      } else {
+        toast({ title: "Info", description: "Setup instructions not available yet. Please check back later." });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to get instructions";
+      toast({ title: "Error", description: message, variant: "destructive" });
+    }
   };
 
   const handleOpenDeleteModal = (plan: PlanWithStatus) => {

@@ -35,7 +35,7 @@ export interface PlanWithStatus extends UserPlan {
   daysUntilAutoDelete?: number; // For expired plans
 }
 
-export function useUserPlans(userId: string | undefined, authToken: string | undefined) {
+export function useUserPlans(userId: string | undefined) {
   const [plans, setPlans] = useState<PlanWithStatus[]>([]);
   const [stats, setStats] = useState<PlanStats>({
     activePlans: 0,
@@ -95,7 +95,7 @@ export function useUserPlans(userId: string | undefined, authToken: string | und
 
   // Fetch user plans from API
   const fetchPlans = useCallback(async () => {
-    if (!userId || !authToken) {
+    if (!userId) {
       setError("User not authenticated");
       setLoading(false);
       return;
@@ -105,14 +105,22 @@ export function useUserPlans(userId: string | undefined, authToken: string | und
       setLoading(true);
       setError(null);
 
+      // Get Supabase JWT token
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.access_token) {
+        throw new Error("Failed to get authentication token");
+      }
+
       const response = await fetch("/api/plans/user-plans", {
         headers: {
-          Authorization: `Bearer ${authToken}`,
-          "x-user-id": userId,
+          Authorization: `Bearer ${session.access_token}`,
         },
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Your session has expired. Please log in again.");
+        }
         throw new Error("Failed to fetch plans");
       }
 
@@ -128,7 +136,7 @@ export function useUserPlans(userId: string | undefined, authToken: string | und
     } finally {
       setLoading(false);
     }
-  }, [userId, authToken, calculatePlanStatus]);
+  }, [userId, calculatePlanStatus]);
 
   // Calculate statistics from plans
   const calculateStats = useCallback((plansData: PlanWithStatus[]) => {
@@ -168,19 +176,48 @@ export function useUserPlans(userId: string | undefined, authToken: string | und
       .on(
         "postgres_changes",
         {
-          event: "*", // Listen to all events (INSERT, UPDATE, DELETE)
+          event: "INSERT", // New plan added
           schema: "public",
           table: "user_plans",
           filter: `user_id=eq.${userId}`,
         },
         async (payload) => {
-          console.log("[v0] Real-time update received:", payload);
-
-          // Fetch fresh data when changes are detected
+          console.log("[v0] Plan created/approved:", payload);
+          // Fetch fresh data when new plan is inserted
           await fetchPlans();
         }
       )
-      .subscribe();
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE", // Plan status changed (renewed, expired, etc.)
+          schema: "public",
+          table: "user_plans",
+          filter: `user_id=eq.${userId}`,
+        },
+        async (payload) => {
+          console.log("[v0] Plan updated:", payload);
+          // Fetch fresh data when plan is updated
+          await fetchPlans();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE", // Plan deleted
+          schema: "public",
+          table: "user_plans",
+          filter: `user_id=eq.${userId}`,
+        },
+        async (payload) => {
+          console.log("[v0] Plan deleted:", payload);
+          // Fetch fresh data when plan is deleted
+          await fetchPlans();
+        }
+      )
+      .subscribe((status) => {
+        console.log("[v0] Realtime subscription status:", status);
+      });
 
     subscriptionRef.current = subscription;
 
@@ -193,7 +230,7 @@ export function useUserPlans(userId: string | undefined, authToken: string | und
 
   // Initial fetch and real-time setup
   useEffect(() => {
-    if (!userId || !authToken) {
+    if (!userId) {
       setLoading(false);
       return;
     }
@@ -206,7 +243,7 @@ export function useUserPlans(userId: string | undefined, authToken: string | und
         unsubscribe();
       }
     };
-  }, [userId, authToken, fetchPlans, setupRealtimeSubscription]);
+  }, [userId, fetchPlans, setupRealtimeSubscription]);
 
   // Update countdown timers every second
   useEffect(() => {
@@ -244,21 +281,28 @@ export function useUserPlans(userId: string | undefined, authToken: string | und
   // Delete handler
   const deletePlan = useCallback(
     async (planId: string) => {
-      if (!authToken) {
-        setError("User not authenticated");
-        return false;
-      }
-
       try {
+        // Get Supabase JWT token
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !session?.access_token) {
+          throw new Error("Your session has expired. Please log in again.");
+        }
+
         const response = await fetch(`/api/plans/${planId}`, {
           method: "DELETE",
           headers: {
-            Authorization: `Bearer ${authToken}`,
-            "x-user-id": userId,
+            Authorization: `Bearer ${session.access_token}`,
           },
         });
 
         if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error("Your session has expired. Please log in again.");
+          }
+          if (response.status === 403) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "You cannot delete this plan");
+          }
           const errorData = await response.json();
           throw new Error(errorData.error || "Failed to delete plan");
         }
@@ -275,7 +319,7 @@ export function useUserPlans(userId: string | undefined, authToken: string | und
         return false;
       }
     },
-    [userId, authToken, plans, calculateStats]
+    [plans, calculateStats]
   );
 
   // Refetch handler
