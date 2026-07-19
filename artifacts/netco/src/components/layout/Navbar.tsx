@@ -12,6 +12,8 @@ export function Navbar() {
   const [location] = useLocation();
   const { user, signOut, loading } = useAuth();
 
+  console.log("[v0] Navbar RENDER - user.id:", user?.id, "loading:", loading, "location:", location);
+
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);

@@ -43,6 +43,8 @@ export default function AccountPage() {
   const { user, session, signOut, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
+  console.log("[v0] AccountPage RENDER - user.id:", user?.id, "authLoading:", authLoading, "session token:", session?.access_token?.slice(0, 20));
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -81,11 +83,16 @@ export default function AccountPage() {
 
   // Load profile directly from Supabase (not from API to avoid SPA rewrite issues)
   useEffect(() => {
-    if (!user || authLoading) return;
+    console.log("[v0] USEEFFECT FIRED - dependencies changed: user.id:", user?.id, "authLoading:", authLoading);
+    
+    if (!user || authLoading) {
+      console.log("[v0] USEEFFECT EARLY RETURN - user:", !!user, "authLoading:", authLoading);
+      return;
+    }
 
     const loadProfile = async () => {
       try {
-        console.log("[v0] Loading profile for user:", user.id);
+        console.log("[v0] fetchProfile CALLED for user:", user.id);
         
         // Query user_profiles table directly from Supabase
         const { data, error } = await supabase
@@ -162,6 +169,8 @@ export default function AccountPage() {
 
     loadProfile();
   }, [user, authLoading]);
+
+  console.log("[v0] useEffect dependency array ref check - user object ref likely changes every render");
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

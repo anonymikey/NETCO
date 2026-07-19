@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase, isAdmin } from "@/lib/supabase";
 
@@ -27,6 +27,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [expiryTimeoutId, setExpiryTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const prevUserRef = useRef<User | null>(null);
+
+  console.log("[v0] AuthProvider RENDER - session user id:", session?.user?.id, "loading:", loading, "expiryTimeoutId:", !!expiryTimeoutId);
 
   // Helper function to set session expiry timer
   const scheduleSessionExpiry = (session: Session | null) => {
@@ -100,6 +103,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const user = session?.user ?? null;
+
+  // CRITICAL: Track if user object reference changed
+  const userRefChanged = prevUserRef.current !== user;
+  if (userRefChanged) {
+    console.log("[v0] USER OBJECT REFERENCE CHANGED - user.id:", user?.id, "prev user.id:", prevUserRef.current?.id, "same id but diff ref:", user?.id === prevUserRef.current?.id);
+    prevUserRef.current = user;
+  }
 
   return (
     <AuthContext.Provider value={{ session, user, isAdminUser: isAdmin(user?.email), loading, sessionExpired, signOut, logout }}>
