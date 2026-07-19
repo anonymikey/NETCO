@@ -212,18 +212,27 @@ export async function hasNotificationBeenCreated(
   planId: string,
   trigger: NotificationTrigger
 ): Promise<boolean> {
-  const [existing] = await db
-    .select()
-    .from(planNotificationTrackingTable)
-    .where(
-      and(
-        eq(planNotificationTrackingTable.planId, planId),
-        eq(planNotificationTrackingTable.trigger, trigger)
+  try {
+    const [existing] = await db
+      .select()
+      .from(planNotificationTrackingTable)
+      .where(
+        and(
+          eq(planNotificationTrackingTable.planId, planId),
+          eq(planNotificationTrackingTable.trigger, trigger)
+        )
       )
-    )
-    .limit(1);
+      .limit(1);
 
-  return !!existing;
+    return !!existing;
+  } catch (err: any) {
+    // If table doesn't exist, treat as notification not created (first time)
+    if (err?.code === '42P01' || err?.message?.includes('does not exist')) {
+      console.log(`[v0] Notification tracking table not yet available for plan ${planId}`);
+      return false;
+    }
+    throw err;
+  }
 }
 
 /**
@@ -235,11 +244,20 @@ export async function recordNotificationCreated(
   trigger: NotificationTrigger,
   expiryDate: Date
 ): Promise<void> {
-  await db.insert(planNotificationTrackingTable).values({
-    id: randomUUID(),
-    planId,
-    userId,
-    trigger,
-    expiryDateSnapshot: expiryDate,
-  });
+  try {
+    await db.insert(planNotificationTrackingTable).values({
+      id: randomUUID(),
+      planId,
+      userId,
+      trigger,
+      expiryDateSnapshot: expiryDate,
+    });
+  } catch (err: any) {
+    // If table doesn't exist, just skip recording (will retry on next check)
+    if (err?.code === '42P01' || err?.message?.includes('does not exist')) {
+      console.log(`[v0] Notification tracking table not yet available, skipping record for plan ${planId}`);
+      return;
+    }
+    throw err;
+  }
 }

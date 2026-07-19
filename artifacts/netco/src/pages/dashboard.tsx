@@ -265,11 +265,16 @@ export default function Dashboard() {
                   </div>
                   <p className="text-xs text-muted-foreground">Expired {new Date(plan.expiryDate).toLocaleDateString("en-KE")}</p>
                 </div>
-                <Link href="/pricing">
-                  <Button size="sm" variant="outline" className="border-border hover:border-primary/50 text-xs">
-                    <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Renew Plan
+                <div className="flex gap-2">
+                  <Link href="/pricing" className="flex-1">
+                    <Button size="sm" variant="outline" className="border-border hover:border-primary/50 text-xs w-full">
+                      <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Renew Plan
+                    </Button>
+                  </Link>
+                  <Button size="sm" variant="outline" className="border-destructive/30 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteConfig(plan.id, plan.planName)}>
+                    <Trash2 className="w-4 h-4" />
                   </Button>
-                </Link>
+                </div>
               </div>
             ))}
           </div>
