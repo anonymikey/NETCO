@@ -68,15 +68,6 @@ function getColorStateIconColor(colorState: string) {
   }
 }
 
-function formatTimeRemaining(ms: number) {
-  if (ms <= 0) return "Expired";
-  const days = Math.floor(ms / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-  const seconds = Math.floor((ms % (1000 * 60)) / 1000);
-  return `${days}d ${hours}h ${minutes}m ${seconds}s`;
-}
-
 function getWarningMessage(colorState: string, daysUntilDelete?: number): string | null {
   switch (colorState) {
     case "yellow":
@@ -316,33 +307,18 @@ export default function MyPlansPage() {
             <ExpiryBadge expiryDate={plan.expiryDate} />
           </div>
 
-          {/* Countdown Timer */}
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider">Time Remaining</p>
+          {/* Status Badge */}
+          {plan.colorState === "grey" && (
             <div className={`rounded-xl p-4 border ${timerColorClasses}`}>
-              <div className="grid grid-cols-4 gap-3 text-center">
-                {[
-                  { value: Math.floor(plan.timeRemaining / (1000 * 60 * 60 * 24)), label: "Days" },
-                  { value: Math.floor((plan.timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)), label: "Hours" },
-                  { value: Math.floor((plan.timeRemaining % (1000 * 60 * 60)) / (1000 * 60)), label: "Minutes" },
-                  { value: Math.floor((plan.timeRemaining % (1000 * 60)) / 1000), label: "Seconds" },
-                ].map((time, idx) => (
-                  <div key={idx}>
-                    <p className={`text-lg font-bold ${
-                      plan.colorState === "green" ? "text-green-400" :
-                      plan.colorState === "yellow" ? "text-yellow-400" :
-                      plan.colorState === "orange" ? "text-orange-400" :
-                      plan.colorState === "red" ? "text-red-400" :
-                      "text-gray-400"
-                    }`}>
-                      {String(time.value).padStart(2, "0")}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">{time.label}</p>
-                  </div>
-                ))}
+              <div className="text-center space-y-2">
+                <p className="text-sm font-medium text-gray-400">Plan Expired</p>
+                <p className="text-xs text-muted-foreground">Expired on {new Date(plan.expiryDate).toLocaleDateString("en-KE")}</p>
+                {plan.daysUntilAutoDelete && plan.daysUntilAutoDelete > 0 && (
+                  <p className="text-xs text-yellow-400">Auto-delete in {plan.daysUntilAutoDelete} day{plan.daysUntilAutoDelete === 1 ? "" : "s"}</p>
+                )}
               </div>
             </div>
-          </div>
+          )}
 
           {/* Progress Bar */}
           <div className="space-y-2">
