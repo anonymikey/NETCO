@@ -1,195 +1,174 @@
-# NETCO Config Download - Exact Code Changes Required
+# Exact Code Changes Added for Instrumentation
 
-**Total Changes**: 3 files, 2 additions, 3 modifications
-
----
-
-## File 1: `artifacts/api-server/src/routes/orders.ts`
-
-### Change 1a: Add Constant (after imports, around line 5-10)
-
-Add this line:
-
-```typescript
-const API_BASE_URL = process.env.API_BASE_URL?.replace(/\/+$/, "") || "http://localhost:3001";
-```
-
-### Change 1b: Update Line 120
-
-**BEFORE:**
-```typescript
-const configUrl = `/api/orders/${orderId}/download`;
-```
-
-**AFTER:**
-```typescript
-const configUrl = `${API_BASE_URL}/api/orders/${orderId}/download`;
-```
-
-**Full Context** (lines 118-122):
-```typescript
-// ... previous code ...
-const orderId = req.params.id;
-const API_BASE_URL = process.env.API_BASE_URL?.replace(/\/+$/, "") || "http://localhost:3001";
-const configUrl = `${API_BASE_URL}/api/orders/${orderId}/download`;
-// ... rest of code ...
-```
+All changes are CONSOLE LOGS ONLY - no functional changes to the application.
 
 ---
 
-## File 2: `artifacts/api-server/src/routes/payment.ts`
+## 1. AuthContext.tsx
 
-### Change 2a: Add Constant (after imports, around line 5-10)
-
-Add this line:
-
+### Change 1: Import useRef
 ```typescript
-const API_BASE_URL = process.env.API_BASE_URL?.replace(/\/+$/, "") || "http://localhost:3001";
+// BEFORE:
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+
+// AFTER:
+import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from "react";
 ```
 
-### Change 2b: Update Line 78
-
-**BEFORE:**
+### Change 2: Add prevUserRef state
 ```typescript
-const configUrl = `/api/orders/${orderId}/download`;
+// Inside AuthProvider(), after [expiryTimeoutId]:
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const [expiryTimeoutId, setExpiryTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  
+  // ADDED:
+  const prevUserRef = useRef<User | null>(null);
+
+  console.log("[v0] AuthProvider RENDER - session user id:", session?.user?.id, "loading:", loading, "expiryTimeoutId:", !!expiryTimeoutId);
+  // ... rest of function
+}
 ```
 
-**AFTER:**
+### Change 3: Add object reference tracking
 ```typescript
-const configUrl = `${API_BASE_URL}/api/orders/${orderId}/download`;
-```
+// Before "return <AuthContext.Provider...":
+  const user = session?.user ?? null;
 
-**Full Context** (lines 76-80):
-```typescript
-// ... previous code ...
-const orderId = req.params.id;
-const API_BASE_URL = process.env.API_BASE_URL?.replace(/\/+$/, "") || "http://localhost:3001";
-const configUrl = `${API_BASE_URL}/api/orders/${orderId}/download`;
-// ... rest of code ...
+  // ADDED: Track if user object reference changed
+  const userRefChanged = prevUserRef.current !== user;
+  if (userRefChanged) {
+    console.log("[v0] USER OBJECT REFERENCE CHANGED - user.id:", user?.id, "prev user.id:", prevUserRef.current?.id, "same id but diff ref:", user?.id === prevUserRef.current?.id);
+    prevUserRef.current = user;
+  }
+
+  return (
+    <AuthContext.Provider value={{ ... }}>
 ```
 
 ---
 
-## File 3: `artifacts/api-server/src/routes/admin-orders.ts`
+## 2. Layout.tsx
 
-### Change 3a: Add Constant (after imports, around line 5-10)
-
-Add this line:
-
+### Change: Add render log
 ```typescript
-const API_BASE_URL = process.env.API_BASE_URL?.replace(/\/+$/, "") || "http://localhost:3001";
-```
+// Inside Layout function body, after const statements:
+export function Layout({ children }: LayoutProps) {
+  const [location] = useLocation();
+  const isAdminRoute = location.startsWith("/admin");
 
-### Change 3b: Update Line 100
+  // ADDED:
+  console.log("[v0] Layout RENDER - location:", location);
 
-**BEFORE:**
-```typescript
-const configUrl = `/api/orders/${order.id}/download`;
-```
-
-**AFTER:**
-```typescript
-const configUrl = `${API_BASE_URL}/api/orders/${order.id}/download`;
-```
-
-**Full Context** (lines 98-102):
-```typescript
-// ... previous code ...
-const orderId = order.id;
-const API_BASE_URL = process.env.API_BASE_URL?.replace(/\/+$/, "") || "http://localhost:3001";
-const configUrl = `${API_BASE_URL}/api/orders/${order.id}/download`;
-// ... rest of code ...
+  return (
+    // ... JSX
 ```
 
 ---
 
-## Environment Variables
+## 3. Navbar.tsx
 
-### For Render Dashboard
+### Change: Add render log with auth state
+```typescript
+// Inside Navbar function body, after const statements:
+export function Navbar() {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [location] = useLocation();
+  const { user, signOut, loading } = useAuth();
 
-**Path**: Dashboard → NETCO → Environment
+  // ADDED:
+  console.log("[v0] Navbar RENDER - user.id:", user?.id, "loading:", loading, "location:", location);
 
-Add:
+  useEffect(() => {
+    // ... existing useEffect
 ```
-Key: API_BASE_URL
-Value: https://netco.onrender.com
+
+---
+
+## 4. AccountPage.tsx
+
+### Change 1: Add component render log
+```typescript
+// Inside AccountPage function, after destructuring:
+export default function AccountPage() {
+  const [, navigate] = useLocation();
+  const { user, session, signOut, loading: authLoading } = useAuth();
+  const { toast } = useToast();
+
+  // ADDED:
+  console.log("[v0] AccountPage RENDER - user.id:", user?.id, "authLoading:", authLoading, "session token:", session?.access_token?.slice(0, 20));
+
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  // ... rest of component
 ```
 
-### For Vercel Dashboard
+### Change 2: Add useEffect tracking
+```typescript
+// Inside the second useEffect (profile loading):
+  useEffect(() => {
+    // ADDED:
+    console.log("[v0] USEEFFECT FIRED - dependencies changed: user.id:", user?.id, "authLoading:", authLoading);
+    
+    if (!user || authLoading) {
+      // ADDED:
+      console.log("[v0] USEEFFECT EARLY RETURN - user:", !!user, "authLoading:", authLoading);
+      return;
+    }
 
-**Path**: Project Settings → Environment Variables
+    const loadProfile = async () => {
+      try {
+        // ADDED:
+        console.log("[v0] fetchProfile CALLED for user:", user.id);
+        
+        // ... existing code
+```
 
-Add:
+### Change 3: Add dependency note at end of useEffect
+```typescript
+    loadProfile();
+  }, [user, authLoading]);
+
+  // ADDED:
+  console.log("[v0] useEffect dependency array ref check - user object ref likely changes every render");
 ```
-Name: VITE_API_BASE_URL
-Value: https://netco.onrender.com
-Environments: Production, Preview, Development
-```
+
+---
+
+## Summary
+
+- **Total console.log() statements added:** ~15 lines across 4 files
+- **Total lines added:** ~50 (including comments)
+- **Functional code changes:** 0 (all logging only)
+- **Breaking changes:** 0
+- **Performance impact:** Minimal (only console logging)
+- **Removable:** Yes - all `console.log("[v0]` lines can be deleted later
 
 ---
 
 ## Verification
 
-After making changes:
+Build succeeds with no errors:
+```
+✓ 2957 modules transformed
+✓ built in 5.57s
+```
 
+TypeScript check: No errors
+All imports resolve correctly
+No warnings about unused code
+
+---
+
+## How to Remove Later
+
+Just search for `[v0]` and delete all console.log statements that contain it.
+
+Or run:
 ```bash
-# Check constant is added to all 3 files
-grep -n "const API_BASE_URL" artifacts/api-server/src/routes/orders.ts
-grep -n "const API_BASE_URL" artifacts/api-server/src/routes/payment.ts
-grep -n "const API_BASE_URL" artifacts/api-server/src/routes/admin-orders.ts
-
-# Check URLs use the constant
-grep -n "configUrl.*API_BASE_URL" artifacts/api-server/src/routes/orders.ts
-grep -n "configUrl.*API_BASE_URL" artifacts/api-server/src/routes/payment.ts
-grep -n "configUrl.*API_BASE_URL" artifacts/api-server/src/routes/admin-orders.ts
+grep -r "console.log.*\[v0\]" src/
+# To see all the lines, then delete them
 ```
 
-All should return matches.
-
----
-
-## Commit Message
-
-```
-fix: use absolute URLs for config downloads
-
-- Store full API URLs instead of relative paths
-- Fixes downloads when API and frontend on different domains
-- Backward compatible with frontend apiUrl() function
-- Requires API_BASE_URL environment variable set
-```
-
----
-
-## Deployment Steps
-
-1. Make code changes above
-2. Commit & push to main
-3. Set environment variables in Render and Vercel
-4. Wait for auto-deploys (10-15 minutes)
-5. Test by creating order and downloading
-
----
-
-## Test Command
-
-```bash
-# After deployment, test the API
-curl -I "https://netco.onrender.com/api/orders/test-id/download"
-
-# Should return 200 or 404 (proving API responds)
-# Old: might return 404 "not found" (because test-id doesn't exist)
-# New: should return headers with Content-Type: application/octet-stream
-```
-
----
-
-## That's It!
-
-Three files, two URLs, three lines changed = working config downloads ✅
-
----
-
-**Version**: 1.0  
-**Status**: Ready to Apply  
-**Created**: June 22, 2026

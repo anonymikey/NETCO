@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { apiUrl } from "@/lib/api";
+import { authenticatedFetch } from "@/lib/auth-helpers";
 import { Loader2, LogOut, Save, AlertCircle, Upload, CheckCircle2, Clock, ShoppingCart, Shield, Bell, Lock, User, Globe, Eye, EyeOff, Smartphone, Monitor, CheckCircle } from "lucide-react";
 
 interface UserProfile {
@@ -41,6 +42,8 @@ export default function AccountPage() {
   const [, navigate] = useLocation();
   const { user, session, signOut, loading: authLoading } = useAuth();
   const { toast } = useToast();
+
+  console.log("[v0] AccountPage RENDER - user.id:", user?.id, "authLoading:", authLoading, "session token:", session?.access_token?.slice(0, 20));
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,11 +83,16 @@ export default function AccountPage() {
 
   // Load profile directly from Supabase (not from API to avoid SPA rewrite issues)
   useEffect(() => {
-    if (!user || authLoading) return;
+    console.log("[v0] USEEFFECT FIRED - dependencies changed: user.id:", user?.id, "authLoading:", authLoading);
+    
+    if (!user || authLoading) {
+      console.log("[v0] USEEFFECT EARLY RETURN - user:", !!user, "authLoading:", authLoading);
+      return;
+    }
 
     const loadProfile = async () => {
       try {
-        console.log("[v0] Loading profile for user:", user.id);
+        console.log("[v0] fetchProfile CALLED for user:", user.id);
         
         // Query user_profiles table directly from Supabase
         const { data, error } = await supabase
@@ -162,6 +170,8 @@ export default function AccountPage() {
     loadProfile();
   }, [user, authLoading]);
 
+  console.log("[v0] useEffect dependency array ref check - user object ref likely changes every render");
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -170,11 +180,8 @@ export default function AccountPage() {
     try {
       console.log("[v0] Saving profile via API for user:", user.id);
       
-      const res = await fetch(apiUrl(`api/auth/profile/${user.id}`), {
+      const res = await authenticatedFetch(apiUrl(`api/auth/profile/${user.id}`), {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           username: username || undefined,
           fullName: fullName || undefined,

@@ -1,0 +1,164 @@
+================================================================================
+RENDER LOOP INSTRUMENTATION - COMPLETE CHECKLIST
+================================================================================
+
+STATUS: ✅ COMPLETE - Code builds successfully, ready for testing
+
+FILES INSTRUMENTED: 4
+CONSOLE LOGS ADDED: ~50 lines
+BUILD TIME: 5.57s
+TYPESCRIPT ERRORS: 0
+
+================================================================================
+INSTRUMENTED FILES
+================================================================================
+
+1. ✅ src/contexts/AuthContext.tsx
+   - Added useRef import
+   - Added prevUserRef state variable
+   - Added object reference change detection
+   - CRITICAL: Logs when user object reference changes
+   - PROVES: If user.id is same but object reference different = bug confirmed
+
+2. ✅ src/components/layout/Layout.tsx
+   - Added render tracking log
+   - Shows when Layout component renders
+   - Helps identify render cascade
+
+3. ✅ src/components/layout/Navbar.tsx
+   - Added render tracking log with auth state
+   - Shows when Navbar re-renders
+   - Captures user.id, loading, location
+
+4. ✅ src/pages/account.tsx
+   - Added component render log
+   - Added useEffect fire detection
+   - Added fetchProfile call log
+   - Added dependency array note
+   - CAPTURES: Every profile fetch request
+
+================================================================================
+WHAT THE LOGS WILL SHOW
+================================================================================
+
+Console Filter: [v0]
+
+Sample output pattern when bug occurs:
+
+AuthProvider RENDER → USER OBJECT REFERENCE CHANGED (same ID, diff ref)
+  ↓
+Layout RENDER
+  ↓
+Navbar RENDER
+  ↓
+AccountPage RENDER → USEEFFECT FIRED → fetchProfile CALLED
+  ↓
+[network request to user_profiles]
+  ↓
+[Some state update triggers AuthProvider again]
+  ↓
+USER OBJECT REFERENCE CHANGED (AGAIN - same ID, DIFFERENT REF)
+  ↓
+[Loop repeats thousands of times]
+
+KEY INDICATOR: If "same id but diff ref: true" appears many times = BUG CONFIRMED
+
+================================================================================
+HOW TO TEST
+================================================================================
+
+1. Start dev server:
+   cd /vercel/share/v0-project/artifacts/netco
+   npm run dev
+
+2. Open http://localhost:5173 in browser
+
+3. Open DevTools (F12):
+   - Go to Console tab
+   - Type in filter box: [v0]
+   - This shows only our logs
+
+4. Login if needed
+
+5. Navigate to /account page
+
+6. Watch the console for 3-5 seconds
+
+7. Copy the logs and share them
+
+================================================================================
+WHAT EACH LOG MEANS
+================================================================================
+
+[v0] AuthProvider RENDER - session user id: XYZ loading: false expiryTimeoutId: false
+→ AuthContext is rendering, shows the user ID
+
+[v0] USER OBJECT REFERENCE CHANGED - user.id: XYZ prev user.id: ABC same id but diff ref: true
+→ CRITICAL: User object reference changed even though ID is the same
+→ If this repeats many times with "same id but diff ref: true" = BUG FOUND
+
+[v0] Layout RENDER - location: /account
+→ Layout component is rendering
+
+[v0] Navbar RENDER - user.id: XYZ loading: false location: /account
+→ Navbar component is rendering
+
+[v0] AccountPage RENDER - user.id: XYZ authLoading: false session token: eyJhbGc...
+→ AccountPage is rendering
+
+[v0] USEEFFECT FIRED - dependencies changed: user.id: XYZ authLoading: false
+→ The useEffect that calls fetchProfile() fired
+
+[v0] fetchProfile CALLED for user: XYZ
+→ Network request to Supabase is about to be made
+
+================================================================================
+EXPECTED FINDINGS
+================================================================================
+
+SCENARIO 1: User object reference changes constantly (LIKELY)
+→ Log output shows "same id but diff ref: true" hundreds of times
+→ Each time followed by: AccountPage RENDER → USEEFFECT FIRED → fetchProfile CALLED
+→ Network tab shows thousands of user_profiles queries
+→ FIX: Wrap session?.user in useMemo or use user?.id in dependency array
+
+SCENARIO 2: User object reference stable but something else rerenders (LESS LIKELY)
+→ "same id but diff ref: false" or only appears once
+→ But Layout/Navbar still render hundreds of times
+→ FIX: Problem is in Layout or Navbar infinite render
+
+SCENARIO 3: No excessive renders (VERY UNLIKELY)
+→ Logs only appear 2-3 times
+→ Network tab clean
+→ The reported 8000 requests might be old or from different issue
+
+================================================================================
+BUILD VERIFICATION
+================================================================================
+
+✅ Build: Success (5.57s)
+✅ TypeScript: No errors
+✅ Components: All compile
+✅ Logs: Added and working
+✅ Ready for testing
+
+Dev server command:
+cd /vercel/share/v0-project/artifacts/netco && npm run dev
+
+Build command:
+cd /vercel/share/v0-project/artifacts/netco && npm run build
+
+================================================================================
+NO ASSUMPTIONS - JUST DATA
+================================================================================
+
+This instrumentation doesn't guess. It captures:
+- EXACT render sequence
+- EXACT dependency changes
+- EXACT object reference changes
+- EXACT fetch call timing
+
+When you run it and share the logs, we'll have PROOF of what's happening,
+not theory.
+
+================================================================================
