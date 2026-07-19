@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useListPlans, getListPlansQueryKey, useListConfigServers } from "@workspace/api-client-react";
-import { Search, Download, Clock, CheckCircle, XCircle, Smartphone, Wifi, RefreshCw, AlertCircle, Gift, Server, ArrowRight } from "lucide-react";
+import { Search, Download, Clock, CheckCircle, XCircle, Smartphone, Wifi, RefreshCw, AlertCircle, Gift, Server, ArrowRight, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUserPlans } from "@/hooks/useUserPlans";
 import { apiUrl } from "@/lib/api";
 import { initServerStatusUpdates, subscribeToServerStatus, stopServerStatusUpdates } from "@/lib/server-status-realtime";
 import { AppShowcase } from "@/components/app-showcase";
@@ -26,6 +28,8 @@ function formatTimeLeft(expiryDate: string) {
 
 export default function Dashboard() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { deletePlan } = useUserPlans(user?.id);
   const [, navigate] = useLocation();
   const [phone, setPhone] = useState("");
   const [deviceId, setDeviceId] = useState("");
@@ -60,6 +64,21 @@ export default function Dashboard() {
     if (phone.trim()) params.phone = phone.trim();
     if (deviceId.trim()) params.deviceId = deviceId.trim();
     setSearchParams(params);
+  };
+
+  const handleDeleteConfig = async (planId: string, planName: string) => {
+    if (!window.confirm(`Delete "${planName}"? This cannot be undone.`)) return;
+    try {
+      const success = await deletePlan(planId);
+      if (success) {
+        toast({ title: "Success", description: "Config deleted successfully" });
+        setSearchParams(searchParams); // Refetch results
+      } else {
+        toast({ title: "Error", description: "Failed to delete config", variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Error", description: (err as Error).message, variant: "destructive" });
+    }
   };
 
   const activePlans = plans?.filter((p) => p.status === "active") ?? [];
@@ -213,6 +232,16 @@ export default function Dashboard() {
                     )}
                   </div>
                 )}
+                <div className="flex gap-2">
+                  <Link href="/my-plans" className="flex-1">
+                    <Button size="sm" className="bg-secondary/20 text-secondary border border-secondary/30 hover:bg-secondary/30 w-full">
+                      <ArrowRight className="w-4 h-4 mr-2" /> View in My Plans
+                    </Button>
+                  </Link>
+                  <Button size="sm" variant="outline" className="border-destructive/30 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteConfig(plan.id, plan.planName)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
