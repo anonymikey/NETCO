@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { apiUrl } from "@/lib/api";
+import { authenticatedFetch } from "@/lib/auth-helpers";
 import { Loader2, LogOut, Save, AlertCircle, Upload, CheckCircle2, Clock, ShoppingCart, Shield, Bell, Lock, User, Globe, Eye, EyeOff, Smartphone, Monitor, CheckCircle } from "lucide-react";
 
 interface UserProfile {
@@ -170,11 +171,8 @@ export default function AccountPage() {
     try {
       console.log("[v0] Saving profile via API for user:", user.id);
       
-      const res = await fetch(apiUrl(`api/auth/profile/${user.id}`), {
+      const res = await authenticatedFetch(apiUrl(`api/auth/profile/${user.id}`), {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           username: username || undefined,
           fullName: fullName || undefined,

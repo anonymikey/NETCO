@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearTimeout(expiryTimeoutId);
       }
     };
-  }, [expiryTimeoutId]);
+  }, []);
 
   const signOut = async () => {
     if (expiryTimeoutId) {

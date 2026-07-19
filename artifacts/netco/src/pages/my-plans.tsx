@@ -2,6 +2,7 @@ import { useState, useEffect, useNavigate } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUserPlans, PlanWithStatus } from "@/hooks/useUserPlans";
+import { authenticatedFetch } from "@/lib/auth-helpers";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -150,16 +151,7 @@ export default function MyPlansPage() {
 
   const handleDownloadConfig = async (planId: string) => {
     try {
-      const { supabase } = await import("@/lib/supabase");
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        toast({ title: "Error", description: "Please log in to download config", variant: "destructive" });
-        return;
-      }
-
-      const response = await fetch(`/api/plans/${planId}/config`, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
+      const response = await authenticatedFetch(`/api/plans/${planId}/config`);
 
       if (!response.ok) {
         throw new Error("Failed to get config");
@@ -182,16 +174,8 @@ export default function MyPlansPage() {
 
   const handleRenewPlan = async (planId: string) => {
     try {
-      const { supabase } = await import("@/lib/supabase");
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        toast({ title: "Error", description: "Please log in to renew plan", variant: "destructive" });
-        return;
-      }
-
-      const response = await fetch(`/api/plans/${planId}/renew`, {
+      const response = await authenticatedFetch(`/api/plans/${planId}/renew`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${session.access_token}` },
       });
 
       if (!response.ok) {
@@ -212,16 +196,7 @@ export default function MyPlansPage() {
 
   const handleViewInstructions = async (planId: string) => {
     try {
-      const { supabase } = await import("@/lib/supabase");
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        toast({ title: "Error", description: "Please log in to view instructions", variant: "destructive" });
-        return;
-      }
-
-      const response = await fetch(`/api/plans/${planId}/config`, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
+      const response = await authenticatedFetch(`/api/plans/${planId}/config`);
 
       if (!response.ok) {
         throw new Error("Failed to get instructions");

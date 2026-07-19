@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { authenticatedFetch } from "@/lib/auth-helpers";
 
 export interface UserPlan {
   id: string;
@@ -105,17 +106,7 @@ export function useUserPlans(userId: string | undefined) {
       setLoading(true);
       setError(null);
 
-      // Get Supabase JWT token
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session?.access_token) {
-        throw new Error("Failed to get authentication token");
-      }
-
-      const response = await fetch("/api/plans/user-plans", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+      const response = await authenticatedFetch("/api/plans/user-plans");
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -282,17 +273,8 @@ export function useUserPlans(userId: string | undefined) {
   const deletePlan = useCallback(
     async (planId: string) => {
       try {
-        // Get Supabase JWT token
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError || !session?.access_token) {
-          throw new Error("Your session has expired. Please log in again.");
-        }
-
-        const response = await fetch(`/api/plans/${planId}`, {
+        const response = await authenticatedFetch(`/api/plans/${planId}`, {
           method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
         });
 
         if (!response.ok) {
