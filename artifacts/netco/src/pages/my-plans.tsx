@@ -163,24 +163,20 @@ export default function MyPlansPage() {
     }
   };
 
-  const handleRenewPlan = async (planId: string) => {
+  const handleRenewPlan = async (plan: PlanWithStatus) => {
     try {
-      const response = await authenticatedFetch(`/api/plans/${planId}/renew`, {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to initiate renewal");
-      }
-
-      const renewalData = await response.json();
-      
-      toast({ 
-        title: "Renewal Ready", 
-        description: `Ready to renew ${renewalData.planName}. Checkout page will open when integrated.` 
+      // Navigate to pricing page with renewal context
+      navigate('/pricing', {
+        state: {
+          renewalOfPlanId: plan.id,
+          renewalPlanName: plan.planName,
+          network: plan.network,
+          appType: plan.appType,
+          configType: plan.configType,
+        }
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to renew plan";
+      const message = err instanceof Error ? err.message : "Failed to initiate renewal";
       toast({ title: "Error", description: message, variant: "destructive" });
     }
   };
@@ -249,29 +245,38 @@ export default function MyPlansPage() {
     }
   };
 
-  const PlanCard = ({ plan, index }: { plan: PlanWithStatus; index: number }) => {
+  const PlanCard = ({ plan, index, disableAnimation = false }: { plan: PlanWithStatus; index: number; disableAnimation?: boolean }) => {
     const warningMessage = getWarningMessage(plan.colorState, plan.daysUntilAutoDelete);
     const colorStateClasses = getColorStateClasses(plan.colorState);
     const timerColorClasses = getColorStateTimerColor(plan.colorState);
     const iconColor = getColorStateIconColor(plan.colorState);
 
+    // Conditionally use motion.div or regular div based on disableAnimation
+    const CardWrapper = disableAnimation ? 'div' : motion.div;
+    const cardProps = disableAnimation ? {} : {
+      initial: { opacity: 0, y: 20 },
+      animate: { opacity: 1, y: 0 },
+      transition: { delay: index * 0.1, duration: 0.4 },
+    };
+
     return (
-      <motion.div
+      <CardWrapper
         key={plan.id}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.1, duration: 0.4 }}
-        className={`group relative overflow-hidden rounded-2xl border backdrop-blur-xl bg-gradient-to-br p-6 hover:transition-all duration-300 hover:shadow-xl ${colorStateClasses}`}
+        {...cardProps}
+        className={`group relative overflow-hidden rounded-2xl border backdrop-blur-xl bg-gradient-to-br p-6 ${disableAnimation ? "" : "hover:transition-all duration-300 hover:shadow-xl"} ${colorStateClasses}`}
       >
-        {/* Animated background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-transparent group-hover:from-cyan-500/10 group-hover:to-primary/10 transition-all duration-500 pointer-events-none" />
+        {/* Animated background gradient - disabled for expired plans */}
+        {!disableAnimation && (
+          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-transparent group-hover:from-cyan-500/10 group-hover:to-primary/10 transition-all duration-500 pointer-events-none" />
+        )}
 
         <div className="relative z-10 space-y-6">
           {/* Warning Banner */}
           {warningMessage && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
+              initial={disableAnimation ? { opacity: 1, height: "auto" } : { opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
+              transition={disableAnimation ? { duration: 0 } : { duration: 0.3 }}
               className={`flex items-center gap-3 p-3 rounded-lg border ${
                 plan.colorState === "grey"
                   ? "bg-gray-400/10 border-gray-400/30"
@@ -377,7 +382,7 @@ export default function MyPlansPage() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => handleRenewPlan(plan.id)}
+                  onClick={() => handleRenewPlan(plan)}
                   className="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-r from-primary to-secondary text-white font-medium text-sm flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-primary/30 transition-all duration-300"
                 >
                   <RotateCcw className="w-4 h-4" />
@@ -510,7 +515,7 @@ export default function MyPlansPage() {
             ) : (
               <motion.div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
                 {expiredPlans.map((plan, index) => (
-                  <PlanCard key={plan.id} plan={plan} index={index} />
+                  <PlanCard key={plan.id} plan={plan} index={index} disableAnimation={true} />
                 ))}
               </motion.div>
             )}

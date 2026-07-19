@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Check, Zap, Star } from "lucide-react";
+import { Check, Zap, Star, RefreshCw } from "lucide-react";
 import { useListPackages } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -24,12 +24,43 @@ const DURATIONS = [
 ];
 
 export default function Pricing() {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { user } = useAuth();
   const { data: networks, isLoading } = useListPackages();
   const [activeNetwork, setActiveNetwork] = useState(0);
   const [activeCategory, setActiveCategory] = useState(0);
   const [activeDuration, setActiveDuration] = useState("monthly");
+  const [renewalContext, setRenewalContext] = useState<{
+    renewalOfPlanId: string;
+    renewalPlanName: string;
+    network: string;
+    appType: string;
+    configType: string;
+  } | null>(null);
+
+  // Handle renewal context from navigation state
+  useEffect(() => {
+    if (window.history.state?.state) {
+      const state = window.history.state.state;
+      if (state.renewalOfPlanId) {
+        setRenewalContext({
+          renewalOfPlanId: state.renewalOfPlanId,
+          renewalPlanName: state.renewalPlanName,
+          network: state.network,
+          appType: state.appType,
+          configType: state.configType,
+        });
+
+        // Pre-select network based on renewal context
+        if (networks && networks.length > 0 && state.network) {
+          const networkIndex = networks.findIndex(n => n.name.toLowerCase() === state.network.toLowerCase());
+          if (networkIndex >= 0) {
+            setActiveNetwork(networkIndex);
+          }
+        }
+      }
+    }
+  }, [networks]);
 
   const network = networks?.[activeNetwork];
   const category = network?.categories?.[activeCategory];
@@ -37,18 +68,35 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen pt-24 pb-20 px-4">
+      {/* Renewal Context Banner */}
+      {renewalContext && (
+        <div className="max-w-7xl mx-auto mb-6">
+          <div className="flex items-center gap-3 p-4 rounded-lg border border-primary/30 bg-primary/5 text-primary">
+            <RefreshCw className="w-5 h-5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Renewing: {renewalContext.renewalPlanName}</p>
+              <p className="text-xs text-primary/70">You&apos;re renewing your VPN plan. Select the same or different duration below.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="max-w-7xl mx-auto text-center mb-12">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/5 text-primary text-sm font-medium mb-4">
           <Zap className="w-4 h-4" />
-          <span>Transparent Pricing</span>
+          <span>{renewalContext ? "Renew Your Plan" : "Transparent Pricing"}</span>
         </div>
         <h1 className="text-4xl md:text-5xl font-heading font-bold mb-4">
-          Choose Your{" "}
-          <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Network Plan</span>
+          {renewalContext ? "Complete Your Renewal" : "Choose Your"}{" "}
+          <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            {renewalContext ? "Plan" : "Network Plan"}
+          </span>
         </h1>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          All plans include device-locked VPN configs for HTTP Custom and HTTP Injector apps.
+          {renewalContext 
+            ? "Renew your VPN plan to maintain uninterrupted access to your services."
+            : "All plans include device-locked VPN configs for HTTP Custom and HTTP Injector apps."}
         </p>
       </div>
 
@@ -182,7 +230,15 @@ export default function Pricing() {
                       user ? (
                         <Link
                           href="/checkout"
-                          state={{ plan, network: network?.name, duration: activeDuration, amount: price }}
+                          state={{ 
+                            plan, 
+                            network: network?.name, 
+                            duration: activeDuration, 
+                            amount: price,
+                            isRenewal: !!renewalContext,
+                            renewalOfPlanId: renewalContext?.renewalOfPlanId,
+                            renewalPlanName: renewalContext?.renewalPlanName,
+                          }}
                           data-testid={`button-select-${plan.id}`}
                         >
                           <Button
